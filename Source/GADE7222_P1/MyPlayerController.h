@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -15,12 +14,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void OnPossess(APawn* InPawn) override;
-
-public:
-	virtual void Tick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
 
+public:
 	// Input mapping context
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* InputMappingContext;
@@ -41,6 +37,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* CrouchAction;
 
-private:
-	class UEnhancedInputLocalPlayerSubsystem* EnhancedInputSubsystem;
+	// --- NEW COMBAT INPUT ACTIONS ---
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* SwitchWeaponAction;
 };

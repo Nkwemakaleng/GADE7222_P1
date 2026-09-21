@@ -1,9 +1,11 @@
-// BaseCharacter.h
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "BaseCharacter.generated.h"
+
+class UCombatComponent;
+class AWeaponBase;
 
 UCLASS(Abstract)
 class GADE7222_P1_API ABaseCharacter : public ACharacter
@@ -19,7 +21,24 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
-	// Movement properties
+	// --- COMBAT COMPONENT (Accessible by AI and Player) ---
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	UCombatComponent* CombatComponent;
+
+	// --- COMBAT ACTIONS ---
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void StartFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void StopFire();
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void NextWeapon();
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void PickupWeapon(TSubclassOf<AWeaponBase> WeaponClass, int32 AmmoAmount);
+
+	// --- MOVEMENT PROPERTIES ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MaxWalkSpeed = 600.0f;
 
@@ -39,22 +58,11 @@ public:
 	float BrakingDecelerationWalking = 500.0f;
 
 	// Movement functions
-	UFUNCTION(BlueprintCallable, Category = "Movement")
 	virtual void MoveForward(float Value);
-
-	UFUNCTION(BlueprintCallable, Category = "Movement")
 	virtual void MoveRight(float Value);
-
-	UFUNCTION(BlueprintCallable, Category = "Movement")
 	virtual void StartJump();
-
-	UFUNCTION(BlueprintCallable, Category = "Movement")
 	virtual void StopJump();
-
-	UFUNCTION(BlueprintCallable, Category = "Movement")
 	virtual void StartCrouch();
-
-	UFUNCTION(BlueprintCallable, Category = "Movement")
 	virtual void StopCrouch();
 
 	// Camera
@@ -63,8 +71,4 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	class USpringArmComponent* CameraBoom;
-
-	//debugging
-	UFUNCTION(BlueprintCallable, Category = "Debug")
-	void LogMovementStatus();
 };
