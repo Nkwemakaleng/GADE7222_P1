@@ -28,7 +28,18 @@ public:
 	FORCEINLINE int32 GetCurrentAmmo() const { return CurrentAmmo; }
 	FORCEINLINE UWeaponDataAsset* GetWeaponData() const { return WeaponData; }
 	FORCEINLINE bool IsFiring() const { return bIsFiring; }
+	
+	// ---  Muzzle helpers ---
+	//Returns muzzle world location(component-> socket->actor fallback)
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	FVector GetMuzzleLocation() const;
 
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	FRotator GetAimRotationFromMuzzle(const FVector& AimPoint) const;
+
+	// Computes where the crosshair is actually pointing in the world
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	FVector GetAimPoint(float MaxRange = 10000.0f) const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -37,7 +48,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* WeaponMesh;
-
+	//for later when the game is stylized 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	FName MuzzleSocketName = TEXT("Muzzle");
+	
+	UPROPERTY()
+	USceneComponent* MuzzlePointComponent;
 	FTimerHandle FireTimerHandle;
 
 	int32 CurrentAmmo;

@@ -1,5 +1,9 @@
 #include "HUDWidget.h"
+#include "BaseCharacter.h"
 #include "CombatComponent.h"
+#include "HealthComponent.h"
+#include "InteractableInterface.h"
+#include "StaminaComponent.h"
 #include "Components/TextBlock.h"
 #include "StatBarBase.h"
 
@@ -7,11 +11,21 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Default crosshair-relevant setup can go here
+	
 	if (StatBar_Ammo)
 	{
-		StatBar_Ammo->SetBarColor(FLinearColor(1.0f, 0.85f, 0.0f, 1.0f)); // Yellow
+		StatBar_Ammo->SetBarColor(FLinearColor(0.0f, 0.0f, 1.0f, 1.0f)); //Blue
 	}
+	if (StatBar_Health)
+	{
+		StatBar_Health->SetBarColor(FLinearColor(1.0f, 0.0f, 0.0f, 1.0f));//Red
+	}
+	if (StatBar_Stamina)
+	{
+		StatBar_Stamina->SetBarColor(FLinearColor(1.0f, 0.85f, 0.0f, 1.0f));//Yellow
+	}
+	
+	
 }
 
 void UHUDWidget::SetCombatComponent(UCombatComponent* InCombatComponent)
@@ -55,8 +69,58 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	}
 
 	// --- Update ammo bar ---
-	if (StatBar_Ammo)
+	/*if (StatBar_Ammo)
 	{
 		StatBar_Ammo->SetStatValues((float)CurrentAmmo, (float)MaxAmmo);
+	}*/
+	
+	if (TrackedCharacter)
+	{
+		//Weapon 
+		if (TrackedCharacter->CombatComponent && StatBar_Ammo)
+		{
+			StatBar_Ammo->SetStatValues(TrackedCharacter->CombatComponent->GetCurrentAmmo(),TrackedCharacter->CombatComponent->GetMaxAmmo());
+		}
+		// Health
+		if (TrackedCharacter->HealthComponent && StatBar_Health)
+		{
+			StatBar_Health->SetStatValues(
+				TrackedCharacter->HealthComponent->CurrentHealth,
+				TrackedCharacter->HealthComponent->MaxHealth);
+		}
+
+		// Stamina
+		if (TrackedCharacter->StaminaComponent && StatBar_Stamina)
+		{
+			StatBar_Stamina->SetStatValues(
+				TrackedCharacter->StaminaComponent->CurrentStamina,
+				TrackedCharacter->StaminaComponent->MaxStamina);
+		}
+
+		// Interact prompt
+		if (Text_InteractPrompt)
+		{
+			ABaseCharacter* Char = TrackedCharacter;
+			Char->UpdateInteractionFocus();
+
+			if (Char->FocusedInteractable &&
+				Char->FocusedInteractable->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass()))
+			{
+				FText Prompt = IInteractableInterface::Execute_GetInteractPrompt(Char->FocusedInteractable);
+				Text_InteractPrompt->SetText(Prompt);
+				Text_InteractPrompt->SetVisibility(ESlateVisibility::Visible);
+			}
+			else
+			{
+				Text_InteractPrompt->SetVisibility(ESlateVisibility::Hidden);
+			}
+		}
+		
 	}
+	
+	
+}
+void UHUDWidget::SetTrackedCharacter(ABaseCharacter* InCharacter)
+{
+	TrackedCharacter = InCharacter;
 }

@@ -1,34 +1,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "PickupBase.h"
 #include "AmmoPickup.generated.h"
 
+class AWeaponBase;
+
 UCLASS()
-class GADE7222_P1_API AAmmoPickup : public AActor
+class GADE7222_P1_API AAmmoPickup : public APickupBase
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	AAmmoPickup();
 
-protected:
-	virtual void BeginPlay() override;
+	// Which weapon this ammo belongs to
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo")
+	TSubclassOf<AWeaponBase> WeaponToPickup;
 
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	class USphereComponent* PickupSphere;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	class UStaticMeshComponent* PickupMesh;
-
-	// What weapon does this ammo belong to?
-	UPROPERTY(EditAnywhere, Category = "Pickup")
-	TSubclassOf<class AWeaponBase> WeaponToPickup;
-
-	// How much ammo is added to the pool?
-	UPROPERTY(EditAnywhere, Category = "Pickup")
+	// How much ammo to give
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo")
 	int32 AmmoAmount = 10;
 
-	UFUNCTION()
-	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+protected:
+	virtual bool OnPickedUp_Implementation(AActor* Interactor) override;
 };

@@ -27,6 +27,7 @@ public:
 	// This handles both picking up a new gun AND adding ammo to an owned one
 	void HandleWeaponPickup(TSubclassOf<AWeaponBase> WeaponClass, int32 AmmoAmount);
 	
+	
 	UPROPERTY(BlueprintAssignable, Category = "Combat Events")
 	FOnAmmoChangedSignature OnAmmoChanged;
 
@@ -43,6 +44,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	FString GetCurrentWeaponName() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void InitializeWithWeapons(const TArray<TSubclassOf<class AWeaponBase>>& Weapons);
+
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	bool HasWeaponInSlot(int32 SlotIndex) const
+	{
+		return WeaponInventory.IsValidIndex(SlotIndex);
+	}
 protected:
 	virtual void BeginPlay() override;
 
@@ -52,10 +61,17 @@ protected:
 	UPROPERTY()
 	AWeaponBase* CurrentWeapon;
 
-	int32 CurrentWeaponIndex = 0;
+	int32 CurrentWeaponIndex = -1;
 
 	UPROPERTY()
 	ABaseCharacter* OwnerCharacter;
 
-	void InitializeWeapons();
+	//void InitializeWeapons();
+	
+	UPROPERTY()
+	USceneComponent* CachedAttachPoint;
+	
+	void CacheAttachPoint();
+	
+	
 };

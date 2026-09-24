@@ -31,7 +31,7 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-	// The progress bar inside the widget (name must match in the Blueprint!)
+	
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* ProgressBar_Stat;
 	

@@ -4,6 +4,7 @@
 #include "PlayerCharacter.h"
 #include "Engine/LocalPlayer.h"
 
+
 AMyPlayerController::AMyPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -31,7 +32,7 @@ void AMyPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
-	// Pass the Input Actions from the Controller to the Player Character
+	/*// Pass the Input Actions from the Controller to the Player Character
 	if (APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(GetPawn()))
 	{
 		PlayerCharacter->MoveForwardAction = MoveForwardAction;
@@ -43,5 +44,5 @@ void AMyPlayerController::SetupInputComponent()
 		// Pass Combat Actions
 		PlayerCharacter->FireAction = FireAction;
 		PlayerCharacter->SwitchWeaponAction = SwitchWeaponAction;
-	}
+	}*/
 }

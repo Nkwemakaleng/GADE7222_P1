@@ -17,13 +17,7 @@ public:
 	// Called by the PlayerCharacter to hook up the HUD to the combat system
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void SetCombatComponent(UCombatComponent* InCombatComponent);
-
-protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-
-	// --- BindWidget: names must match in the Blueprint designer ---
-
+	
 	// Text showing "Weapon Name" e.g. "Shotriser"
 	UPROPERTY(meta = (BindWidgetOptional))
 	UTextBlock* Text_WeaponName;
@@ -35,15 +29,32 @@ protected:
 	// Text showing "30" (max ammo pool)
 	UPROPERTY(meta = (BindWidgetOptional))
 	UTextBlock* Text_MaxAmmo;
-
-	// Optional stat bar to visually represent the ammo pool
+	
 	UPROPERTY(meta = (BindWidgetOptional))
 	UStatBarBase* StatBar_Ammo;
+	
+	UPROPERTY(meta = (BindWidgetOptional))
+	UStatBarBase* StatBar_Health;
 
-	// Crosshair image (just for visual reference in BP, no logic needed)
+	UPROPERTY(meta = (BindWidgetOptional))
+	UStatBarBase* StatBar_Stamina;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	class UTextBlock* Text_InteractPrompt;
+
+	// Register the character so the HUD can find its components
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void SetTrackedCharacter(class ABaseCharacter* InCharacter);
+protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	
+	UPROPERTY()
+	class ABaseCharacter* TrackedCharacter;
 	
 
 private:
+	
 	UPROPERTY()
 	UCombatComponent* CachedCombatComponent;
 
@@ -51,4 +62,6 @@ private:
 	int32 LastAmmo = -1;
 	int32 LastMaxAmmo = -1;
 	FString LastWeaponName;
+	
+	
 };
