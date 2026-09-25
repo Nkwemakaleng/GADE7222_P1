@@ -38,7 +38,7 @@ public:
 	bool bInfiniteAmmo = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stats")
-	int32 ProjectilesPerShot = 1; // 1 for pistol, 8 for shotgun
+	int32 ProjectilesPerShot = 1; // 1 for pistol, 4 for shotgun
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stats")
 	float SpreadAngle = 0.0f; // 0 for pistol, 5.0 for shotgun

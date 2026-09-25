@@ -9,9 +9,10 @@ AAmmoPickup::AAmmoPickup()
 	bAutoPickupOnOverlap = true;
 	bDestroyOnPickup = true;
 }
-
+//Handles ammo adding and Weapon adding
 bool AAmmoPickup::OnPickedUp_Implementation(AActor* Interactor)
 {
+	
 	if (!WeaponToPickup) return false;
 
 	ABaseCharacter* Char = Cast<ABaseCharacter>(Interactor);

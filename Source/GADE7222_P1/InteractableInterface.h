@@ -19,7 +19,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
 	void Interact(AActor* Interactor);
 
-	// Text shown in the HUD prompt, e.g. "Pick up Shotgun" or "Open Door"
+	// Text shown in the HUD prompt"
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interact")
 	FText GetInteractPrompt() const;
 

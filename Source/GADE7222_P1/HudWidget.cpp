@@ -11,7 +11,7 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	
+	//Changes Colours of the Statbars
 	if (StatBar_Ammo)
 	{
 		StatBar_Ammo->SetBarColor(FLinearColor(0.0f, 0.0f, 1.0f, 1.0f)); //Blue
@@ -68,12 +68,12 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		LastWeaponName = WeaponName;
 	}
 
-	// --- Update ammo bar ---
+	// Update ammo bar 
 	/*if (StatBar_Ammo)
 	{
 		StatBar_Ammo->SetStatValues((float)CurrentAmmo, (float)MaxAmmo);
 	}*/
-	
+	//Update all bars if necessary
 	if (TrackedCharacter)
 	{
 		//Weapon 

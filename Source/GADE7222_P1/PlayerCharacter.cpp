@@ -17,6 +17,7 @@ APlayerCharacter::APlayerCharacter()
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	// Attaches the hud to the playr
 	if (HUDWidgetClass)
 	{
 		HUDWidget = CreateWidget<UHUDWidget>(GetWorld(), HUDWidgetClass);
@@ -109,7 +110,7 @@ void APlayerCharacter::LookInput(const FInputActionValue& Value)
 	if (Controller)
 	{
 		AddControllerYawInput(LookValue.X);
-		AddControllerPitchInput(LookValue.Y * -1.0f); // Fixed inversion
+		AddControllerPitchInput(LookValue.Y * -1.0f); 
 	}
 }
 

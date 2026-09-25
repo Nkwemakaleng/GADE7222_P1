@@ -129,7 +129,7 @@ void UCombatComponent::SwitchWeapon(int32 WeaponIndex)
 	if (!WeaponInventory.IsValidIndex(WeaponIndex)) return;
 	if (WeaponIndex == CurrentWeaponIndex && CurrentWeapon) return;
 
-	// --- 1. Put the OLD weapon to sleep ---
+	// Put the OLD weapon to sleep 
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StopFire();
@@ -139,7 +139,7 @@ void UCombatComponent::SwitchWeapon(int32 WeaponIndex)
 		CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	}
 
-	// --- 2. Equip the NEW weapon ---
+	//  Equip the NEW weapon 
 	CurrentWeaponIndex = WeaponIndex;
 	CurrentWeapon = WeaponInventory[CurrentWeaponIndex];
 
@@ -149,7 +149,7 @@ void UCombatComponent::SwitchWeapon(int32 WeaponIndex)
 	CurrentWeapon->SetActorEnableCollision(false);   // mesh still no collision
 	CurrentWeapon->SetActorTickEnabled(true);
 
-	// --- 3. Attach to the character's WeaponAttachPoint ---
+	// Attach to the character's WeaponAttachPoint 
 	if (!CachedAttachPoint) CacheAttachPoint();      // in case it wasn't found yet
 
 	if (CachedAttachPoint)
@@ -165,7 +165,7 @@ void UCombatComponent::SwitchWeapon(int32 WeaponIndex)
 		UE_LOG(LogTemp, Error, TEXT("SwitchWeapon: No WeaponAttachPoint — weapon stays at world origin."));
 	}
 
-	// --- 4. Notify HUD ---
+	// Notify HUD 
 	OnWeaponChanged.Broadcast(GetCurrentWeaponName());
 	OnAmmoChanged.Broadcast(GetCurrentAmmo(), GetMaxAmmo());
 }
