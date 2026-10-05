@@ -140,25 +140,28 @@ void APlayerCharacter::WeaponSlot1Input(const FInputActionValue& Value)
 	{
 		
 		// Only switch if the slot exists
-		if (CombatComponent->HasWeaponInSlot(1))
+		if (CombatComponent->HasWeaponInSlot(0))
 		{
-			CombatComponent->SwitchWeapon(1);
+			CombatComponent->SwitchWeapon(0);
+			UE_LOG(LogTemp, Warning, TEXT("Switching to weapon slot 1"));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("No weapon in slot 2"));
-		}
-		CombatComponent->SwitchWeapon(0);  // slot 1 = index 0
-		UE_LOG(LogTemp, Warning, TEXT("Switching to weapon slot 1"));
+			UE_LOG(LogTemp, Warning, TEXT("No weapon in slot 1"));
+		}	
 	}
 }
 
 void APlayerCharacter::WeaponSlot2Input(const FInputActionValue& Value)
 {
-	if (CombatComponent)
+	if (CombatComponent->HasWeaponInSlot(1))
 	{
 		CombatComponent->SwitchWeapon(1);  // slot 2 = index 1
 		UE_LOG(LogTemp, Warning, TEXT("Switching to weapon slot 2"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No weapon in slot 2"));
 	}
 }
 void APlayerCharacter::SprintInput(const FInputActionValue& Value)
