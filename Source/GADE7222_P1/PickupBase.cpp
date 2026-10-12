@@ -98,7 +98,10 @@ bool APickupBase::TryConsume(AActor* Interactor)
 	// Child's action
 	const bool bConsumed = OnPickedUp(Interactor);
 	if (!bConsumed) return false;
-
+	
+	//Notify Listener spawner and hud
+	OnPickupConsumed.Broadcast(this, Interactor);
+	
 	// Destroy or start cooldown
 	if (bDestroyOnPickup)
 	{

@@ -9,6 +9,8 @@ class USphereComponent;
 class UStaticMeshComponent;
 class URotatingMovementComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPickupConsumedSignature, APickupBase*, Pickup, AActor*, Interactor);
+
 UCLASS(Abstract, Blueprintable)
 class GADE7222_P1_API APickupBase : public AActor, public IInteractableInterface
 {
@@ -48,6 +50,10 @@ public:
 	// Cooldown before the pickup can be reused (only relevant if bDestroyOnPickup = false)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pickup")
 	float ReuseCooldown = 0.0f;
+
+	// Fires the moment a pickup is successfully consumed by an actor
+	UPROPERTY(BlueprintAssignable, Category = "Pickup")
+	FOnPickupConsumedSignature OnPickupConsumed;
 
 	// --- IInteractableInterface ---
 	virtual void Interact_Implementation(AActor* Interactor) override;
