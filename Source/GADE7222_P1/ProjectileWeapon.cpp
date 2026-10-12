@@ -1,14 +1,14 @@
-#include "Shotgun.h"
+#include "ProjectileWeapon.h"
 #include "WeaponDataAsset.h"
 #include "ProjectileBase.h"
 #include "BaseCharacter.h"
 #include "Engine/World.h"
 
-void AShotgun::Fire()
+void AProjectileWeapon::Fire()
 {
 	if (!WeaponData || !GetCharacterOwner())
 	{
-		UE_LOG(LogTemp, Error, TEXT("Shotgun::Fire - WeaponData or Owner is NULL"));
+		UE_LOG(LogTemp, Error, TEXT("ProjectileWeapon::Fire - WeaponData or Owner is NULL"));
 		return;
 	}
 
@@ -22,20 +22,20 @@ void AShotgun::Fire()
 	}
 
 	// --- DIAGNOSTIC LOGS ---
-	UE_LOG(LogTemp, Warning, TEXT("Shotgun::Fire - ProjectilesPerShot=%d, SpreadAngle=%f"),
+	UE_LOG(LogTemp, Warning, TEXT("ProjectileWeapon::Fire - ProjectilesPerShot=%d, SpreadAngle=%f"),
 		WeaponData->ProjectilesPerShot, WeaponData->SpreadAngle);
-	UE_LOG(LogTemp, Warning, TEXT("Shotgun::Fire - ProjectileClass=%s"),
+	UE_LOG(LogTemp, Warning, TEXT("ProjectileWeapon::Fire - ProjectileClass=%s"),
 		WeaponData->ProjectileClass ? *WeaponData->ProjectileClass->GetName() : TEXT("NULL!"));
 
 	if (!WeaponData->ProjectileClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Shotgun::Fire - ProjectileClass is NULL! Assign BP_Projectile in DA_AttacheShotgun."));
+		UE_LOG(LogTemp, Error, TEXT("ProjectileWeapon::Fire - ProjectileClass is NULL! Assign BP_Projectile in DA_AttacheProjectileWeapon."));
 		return;
 	}
 
 	if (!OwnerChar || !OwnerChar->PlayerCamera)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Shotgun::Fire - Owner has no Camera"));
+		UE_LOG(LogTemp, Error, TEXT("ProjectileWeapon::Fire - Owner has no Camera"));
 		return;
 	}
 
@@ -43,7 +43,7 @@ void AShotgun::Fire()
 	FVector AimPoint = GetAimPoint();
 	FRotator BaseRotation = (AimPoint - MuzzleLoc).Rotation();
 
-	UE_LOG(LogTemp, Warning, TEXT("Shotgun::Fire - MuzzleLoc=%s, AimPoint=%s, Spawning %d projectiles"),
+	UE_LOG(LogTemp, Warning, TEXT("ProjectileWeapon::Fire - MuzzleLoc=%s, AimPoint=%s, Spawning %d projectiles"),
 		*MuzzleLoc.ToString(), *AimPoint.ToString(), WeaponData->ProjectilesPerShot);
 
 	for (int32 i = 0; i < WeaponData->ProjectilesPerShot; i++)
@@ -62,7 +62,7 @@ void AShotgun::Fire()
 
 		if (!Projectile)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Shotgun::Fire - SpawnActor FAILED for projectile %d"), i);
+			UE_LOG(LogTemp, Error, TEXT("ProjectileWeapon::Fire - SpawnActor FAILED for projectile %d"), i);
 		}
 	}
 }

@@ -1,4 +1,4 @@
-#include "Pistol.h"
+#include "HitscanWeapon.h"
 #include "WeaponDataAsset.h"
 #include "BaseCharacter.h"
 #include "Camera/CameraComponent.h"
@@ -6,7 +6,7 @@
 #include "DrawDebugHelpers.h"
 #include "DamageableInterface.h"
 
-void APistol::Fire()
+void AHitscanWeapon::Fire()
 {
 	if (!WeaponData || !GetCharacterOwner()) return;
 
@@ -19,7 +19,7 @@ void APistol::Fire()
 	PerformTrace();
 }
 
-void APistol::PerformTrace()
+void AHitscanWeapon::PerformTrace()
 {
 	ABaseCharacter* OwnerChar = GetCharacterOwner();
 	if (!OwnerChar || !OwnerChar->PlayerCamera) return;
