@@ -73,7 +73,7 @@ public:
 	virtual float GetCurrentHealth_Implementation() const override;
 	virtual bool IsAlive_Implementation() const override;
 
-	// --- MOVEMENT (unchanged from earlier) ---
+	// --- MOVEMENT  ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MaxWalkSpeedCrouched = 300.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -96,11 +96,21 @@ public:
 	virtual void StartCrouch();
 	virtual void StopCrouch();
 
+	//---CAMERA---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	class UCameraComponent* PlayerCamera;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	class USpringArmComponent* CameraBoom;
+	
+	//---RESPAWN---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Respawn")
+	float RespawnDelay = 3.0f;
 
+	UFUNCTION(BlueprintCallable, Category = "Respawn")
+	void Respawn();
+
+	UFUNCTION(BlueprintCallable, Category = "Respawn")
+	AActor* FindRandomRespawnPoint() const;
 protected:
 	virtual void BeginPlay() override;
 	void Tick(float DeltaTime);
@@ -110,4 +120,8 @@ protected:
 
 	FTimerHandle RegenDelayTimer;
 	bool bCanRegenStamina = false;
+	
+	void HandleDeath(AActor* Killer);
+
+	FTimerHandle RespawnTimerHandle;
 };

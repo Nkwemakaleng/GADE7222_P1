@@ -9,6 +9,9 @@
 #include "InteractableInterface.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "EngineUtils.h"
+#include "GameFramework/PlayerStart.h"
+#include "Kismet/GameplayStatics.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -52,6 +55,10 @@ void ABaseCharacter::BeginPlay()
 	if (CombatComponent)
 	{
 		CombatComponent->InitializeWithWeapons(StartingWeapons);
+	}
+	if (HealthComponent)
+	{
+		HealthComponent->OnDeath.AddDynamic(this, &ABaseCharacter::HandleDeath);
 	}
 }
 
@@ -223,3 +230,57 @@ void ABaseCharacter::StartJump() { Jump(); }
 void ABaseCharacter::StopJump() { StopJumping(); }
 void ABaseCharacter::StartCrouch() { Crouch(); }
 void ABaseCharacter::StopCrouch() { UnCrouch(); }
+
+// ---------------- RESPAWN ----------------
+void ABaseCharacter::HandleDeath(AActor* Killer)
+{
+	UE_LOG(LogTemp, Warning, TEXT("%s died (killed by %s)"),
+		*GetName(), Killer ? *Killer->GetName() : TEXT("world"));
+
+	// Disable input, hide, stop movement
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+	GetCharacterMovement()->DisableMovement();
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+
+	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
+		this, &ABaseCharacter::Respawn, RespawnDelay, false);
+}
+//
+void ABaseCharacter::Respawn()
+{
+	AActor* Point = FindRandomRespawnPoint();
+	if (!Point) return;
+
+	SetActorLocation(Point->GetActorLocation(), false, nullptr, ETeleportType::TeleportPhysics);
+	SetActorRotation(Point->GetActorRotation());
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	if (HealthComponent) HealthComponent->ResetHealth();
+	if (StaminaComponent) StaminaComponent->RestoreStamina(StaminaComponent->MaxStamina);
+
+	// Re-equip the starting loadout
+	if (CombatComponent)
+	{
+		CombatComponent->InitializeWithWeapons(StartingWeapons);
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		EnableInput(PC);
+	}
+}
+
+AActor* ABaseCharacter::FindRandomRespawnPoint() const
+{
+	TArray<AActor*> Points;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), Points);
+
+	if (Points.Num() == 0) return nullptr;
+	return Points[FMath::RandRange(0, Points.Num() - 1)];
+}

@@ -7,6 +7,9 @@
 class UTextBlock;
 class UStatBarBase;
 class UCombatComponent;
+class UHealthComponent;
+class UStaminaComponent;
+class ABaseCharacter;
 
 UCLASS(Abstract, Blueprintable)
 class GADE7222_P1_API UHUDWidget : public UWidgetBase
@@ -14,54 +17,37 @@ class GADE7222_P1_API UHUDWidget : public UWidgetBase
 	GENERATED_BODY()
 
 public:
-	// Called by the PlayerCharacter to hook up the HUD to the combat system
+	// Bind to any character's components by listening — no permanent pointers
 	UFUNCTION(BlueprintCallable, Category = "HUD")
-	void SetCombatComponent(UCombatComponent* InCombatComponent);
-	
-	// Text showing "Weapon Name" e.g. "Shotriser"
-	UPROPERTY(meta = (BindWidgetOptional))
-	UTextBlock* Text_WeaponName;
+	void BindToCharacter(ABaseCharacter* InCharacter);
 
-	// Text showing "12" (current ammo pool)
-	UPROPERTY(meta = (BindWidgetOptional))
-	UTextBlock* Text_CurrentAmmo;
-
-	// Text showing "30" (max ammo pool)
-	UPROPERTY(meta = (BindWidgetOptional))
-	UTextBlock* Text_MaxAmmo;
-	
-	UPROPERTY(meta = (BindWidgetOptional))
-	UStatBarBase* StatBar_Ammo;
-	
-	UPROPERTY(meta = (BindWidgetOptional))
-	UStatBarBase* StatBar_Health;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	UStatBarBase* StatBar_Stamina;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	class UTextBlock* Text_InteractPrompt;
-
-	// Register the character so the HUD can find its components
 	UFUNCTION(BlueprintCallable, Category = "HUD")
-	void SetTrackedCharacter(class ABaseCharacter* InCharacter);
+	void UnbindFromCharacter();
+
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-	
-	UPROPERTY()
-	class ABaseCharacter* TrackedCharacter;
-	
+
+	// --- Widget bindings ---
+	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_WeaponName;
+	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_CurrentAmmo;
+	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_MaxAmmo;
+	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_InteractPrompt;
+	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Ammo;
+	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Health;
+	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Stamina;
 
 private:
-	
-	UPROPERTY()
-	UCombatComponent* CachedCombatComponent;
+	// Delegate handlers — receive values, not the source object
+	UFUNCTION() void HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
+	UFUNCTION() void HandleWeaponChanged(const FString& WeaponName);
+	UFUNCTION() void HandleHealthChanged(float Current, float Max);
+	UFUNCTION() void HandleStaminaChanged(float Current, float Max);
 
-	// Track last values so we only update the UI when they change
-	int32 LastAmmo = -1;
-	int32 LastMaxAmmo = -1;
-	FString LastWeaponName;
-	
-	
+	// Weak refs so we don't prevent GC
+	UPROPERTY() TWeakObjectPtr<UCombatComponent> CachedCombat;
+	UPROPERTY() TWeakObjectPtr<UHealthComponent> CachedHealth;
+	UPROPERTY() TWeakObjectPtr<UStaminaComponent> CachedStamina;
+	UPROPERTY() TWeakObjectPtr<ABaseCharacter> CachedCharacter;
 };

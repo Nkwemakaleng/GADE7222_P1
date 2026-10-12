@@ -17,15 +17,14 @@ APlayerCharacter::APlayerCharacter()
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	// Attaches the hud to the playr
+	// Attaches the hud to the player
 	if (HUDWidgetClass)
 	{
 		HUDWidget = CreateWidget<UHUDWidget>(GetWorld(), HUDWidgetClass);
 		if (HUDWidget)
 		{
 			HUDWidget->AddToViewport();
-			HUDWidget->SetCombatComponent(CombatComponent);
-			HUDWidget->SetTrackedCharacter(this);
+			HUDWidget->BindToCharacter(this);   // was SetCombatComponent + SetTrackedCharacter
 		}
 	}
 }

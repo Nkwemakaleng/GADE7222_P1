@@ -4,6 +4,7 @@
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
+#include "DamageableInterface.h"
 
 void APistol::Fire()
 {
@@ -39,8 +40,14 @@ void APistol::PerformTrace()
 	if (GetWorld()->LineTraceSingleByChannel(Hit, CamStart, CamEnd, ECC_Visibility, Params))
 	{
 		ImpactPoint = Hit.ImpactPoint;
-		// Apply damage here:
-		// if (Hit.GetActor()) Hit.GetActor()->TakeDamage(WeaponData->Damage, FDamageEvent(), OwnerChar->GetController(), this);
+		// --- Interface-based damage (no cast to ABaseCharacter!) ---
+		AActor* HitActor = Hit.GetActor();
+		if (HitActor && HitActor != OwnerChar &&
+			HitActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
+		{
+			IDamageableInterface::Execute_ReceiveDamage(
+				HitActor, WeaponData->Damage, OwnerChar, ImpactPoint);
+		}
 	}
 
 	// Draw a beam from MUZZLE → IMPACT so it looks like the bullet came from the gun

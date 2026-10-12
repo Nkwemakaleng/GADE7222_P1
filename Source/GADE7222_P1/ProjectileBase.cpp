@@ -2,6 +2,7 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "BaseCharacter.h"
+#include "DamageableInterface.h"
 
 AProjectileBase::AProjectileBase()
 {
@@ -28,12 +29,17 @@ void AProjectileBase::BeginPlay()
 	SetLifeSpan(LifeSpan);
 }
 
-void AProjectileBase::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AProjectileBase::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (OtherActor && OtherActor != this && OtherActor != GetOwner())
 	{
-		// Apply damage to the hit actor (enemy, destructible, etc.)
-		// OtherActor->TakeDamage(Damage, FDamageEvent(), GetInstigatorController(), this);
+		// --- Interface-based damage ---
+		if (OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
+		{
+			IDamageableInterface::Execute_ReceiveDamage(
+				OtherActor, Damage, GetOwner(), Hit.ImpactPoint);
+		}
 	}
 	Destroy();
 }
