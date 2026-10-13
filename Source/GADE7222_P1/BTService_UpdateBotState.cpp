@@ -7,6 +7,7 @@
 #include "CombatComponent.h"
 #include "PickupBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
 
 UBTService_UpdateBotState::UBTService_UpdateBotState()
 {
@@ -27,29 +28,46 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI->GetPawn());
 	if (!Bot) return;
 
-	// --- Target ---
-	AActor* Target = FindNearestTarget(Bot);
+	// --- Find nearest target only if LOS is clear ---
+	AActor* Target = FindNearestVisibleTarget(Bot);
 	BB->SetValueAsObject(BotBBKeys::TargetActor, Target);
 	BB->SetValueAsBool(BotBBKeys::HasLineOfSight, Target != nullptr);
 
-	// --- Nearest pickups (tag-based; see editor note below) ---
+	// --- Nearest pickups ---
 	BB->SetValueAsObject(BotBBKeys::HealthPickup, FindNearestPickupByTag(Bot, TEXT("Health")));
 	BB->SetValueAsObject(BotBBKeys::AmmoPickup,   FindNearestPickupByTag(Bot, TEXT("Ammo")));
 
-	// --- Intent ---
+	// --- Decide intent ---
 	UpdateIntent(Bot, BB);
-
-	// --- Patrol point ---
-	if (BB->GetValueAsVector(BotBBKeys::PatrolPoint).IsNearlyZero())
-	{
-		// Seed a random point around the bot
-		const FVector Origin = Bot->GetActorLocation();
-		const FVector Rand = FMath::VRand() * FMath::FRandRange(500.f, 1500.f);
-		BB->SetValueAsVector(BotBBKeys::PatrolPoint, Origin + FVector(Rand.X, Rand.Y, 0.f));
-	}
 }
 
-AActor* UBTService_UpdateBotState::FindNearestTarget(ABaseCharacter* Bot) const
+// ----------------------------------------------------------------
+// LOS
+// ----------------------------------------------------------------
+
+bool UBTService_UpdateBotState::HasLineOfSight(ABaseCharacter* Bot, AActor* Target) const
+{
+	if (!Bot || !Target) return false;
+
+	UWorld* World = Bot->GetWorld();
+	if (!World) return false;
+
+	const FVector Start = Bot->GetActorLocation() + FVector(0.f, 0.f, EyeHeightOffset);
+	const FVector End   = Target->GetActorLocation() + FVector(0.f, 0.f, EyeHeightOffset);
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(Bot);
+	Params.AddIgnoredActor(Target);
+	Params.bTraceComplex = false;
+
+	const bool bHit = World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+
+	// If the trace hit nothing, LOS is clear
+	return !bHit;
+}
+
+AActor* UBTService_UpdateBotState::FindNearestVisibleTarget(ABaseCharacter* Bot) const
 {
 	if (!Bot) return nullptr;
 
@@ -62,15 +80,29 @@ AActor* UBTService_UpdateBotState::FindNearestTarget(ABaseCharacter* Bot) const
 	for (AActor* A : AllChars)
 	{
 		if (!A || A == Bot) continue;
+
+		// Skip dead bots
+		ABaseCharacter* AsChar = Cast<ABaseCharacter>(A);
+		if (AsChar && AsChar->HealthComponent && AsChar->HealthComponent->IsDead()) continue;
+
 		const float D = FVector::DistSquared(Bot->GetActorLocation(), A->GetActorLocation());
-		if (D < BestDistSq)
-		{
-			BestDistSq = D;
-			Best = A;
-		}
+		if (D >= BestDistSq) continue;
+		// Must be in front of the bot
+		const FVector Facing = Bot->GetActorForwardVector();
+		const FVector ToTarget = (A->GetActorLocation() - Bot->GetActorLocation()).GetSafeNormal();
+		if (FVector::DotProduct(Facing, ToTarget) < 0.5f) continue; // ~60° half-angle
+		// Must be visible
+		if (!HasLineOfSight(Bot, A)) continue;
+
+		BestDistSq = D;
+		Best = A;
 	}
 	return Best;
 }
+
+// ----------------------------------------------------------------
+// Pickups
+// ----------------------------------------------------------------
 
 AActor* UBTService_UpdateBotState::FindNearestPickupByTag(ABaseCharacter* Bot, const FString& TagFragment) const
 {
@@ -93,12 +125,16 @@ AActor* UBTService_UpdateBotState::FindNearestPickupByTag(ABaseCharacter* Bot, c
 	return Best;
 }
 
+// ----------------------------------------------------------------
+// Intent
+// ----------------------------------------------------------------
+
 void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardComponent* BB)
 {
-	if (!Bot || !Bot->HealthComponent || !Bot->CombatComponent) return;
+	if (!Bot || !Bot->HealthComponent || !Bot->CombatComponent || !BB) return;
 
 	const float HP = Bot->HealthComponent->CurrentHealth;
-	AActor* Target = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::TargetActor));
+	AActor* Target  = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::TargetActor));
 	AActor* HealthP = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::HealthPickup));
 	AActor* AmmoP   = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::AmmoPickup));
 
@@ -109,16 +145,16 @@ void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardCom
 	{
 		Intent = HealthP ? EBotIntent::SeekHealth : EBotIntent::Flee;
 	}
+	// Priority 2: Engage if a visible target exists
 	else if (Target)
 	{
-		// Priority 2: If engage target exists
 		UCombatComponent* CC = Bot->CombatComponent;
 		const bool bLowAmmo = CC->GetCurrentAmmo() < CC->GetMaxAmmo() / 2;
 		Intent = (bLowAmmo && AmmoP) ? EBotIntent::SeekAmmo : EBotIntent::Engage;
 	}
+	// Priority 3: Opportunistically grab health if hurt
 	else if (HP < SeekHealthThreshold && HealthP)
 	{
-		// Priority 3: proactively seek health between engagements
 		Intent = EBotIntent::SeekHealth;
 	}
 

@@ -13,10 +13,15 @@ class GADE7222_P1_API UBTService_UpdateBotState : public UBTService
 public:
 	UBTService_UpdateBotState();
 
-	// Perception filter
+	// --- Perception ---
 	UPROPERTY(EditAnywhere, Category = "Bot")
 	float SightRange = 2000.0f;
 
+	// Vertical offset for the eye position used by the LOS trace
+	UPROPERTY(EditAnywhere, Category = "Bot")
+	float EyeHeightOffset = 60.0f;
+
+	// --- Health thresholds ---
 	UPROPERTY(EditAnywhere, Category = "Bot")
 	float FleeHealthThreshold = 25.0f;
 
@@ -27,7 +32,15 @@ protected:
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
 private:
-	AActor* FindNearestTarget(class ABaseCharacter* Bot) const;
+	// Finds the nearest other ABaseCharacter that the bot can actually see (LOS check)
+	AActor* FindNearestVisibleTarget(class ABaseCharacter* Bot) const;
+
+	// Finds the nearest pickup whose class name contains TagFragment
 	AActor* FindNearestPickupByTag(class ABaseCharacter* Bot, const FString& TagFragment) const;
-	void    UpdateIntent(class ABaseCharacter* Bot, class UBlackboardComponent* BB);
+
+	// Does a line trace and returns true if clear
+	bool HasLineOfSight(class ABaseCharacter* Bot, AActor* Target) const;
+
+	// Decides the bot's intent and writes it to the Blackboard
+	void UpdateIntent(class ABaseCharacter* Bot, class UBlackboardComponent* BB);
 };

@@ -218,3 +218,37 @@ FString UCombatComponent::GetCurrentWeaponName() const
 		return CurrentWeapon->GetWeaponData()->WeaponName;
 	return TEXT("None");
 }
+
+void UCombatComponent::DestroyAllWeapons()
+{
+	// Stop firing anything first
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StopFire();
+		CurrentWeapon = nullptr;
+	}
+
+	for (AWeaponBase* W : WeaponInventory)
+	{
+		if (IsValid(W))
+		{
+			W->Destroy();
+		}
+	}
+
+	WeaponInventory.Empty();
+	CurrentWeaponIndex = -1;
+
+	UE_LOG(LogTemp, Warning, TEXT("CombatComponent: destroyed all weapons."));
+}
+
+void UCombatComponent::SetWeaponsVisible(bool bVisible)
+{
+	for (AWeaponBase* W : WeaponInventory)
+	{
+		if (IsValid(W))
+		{
+			W->SetActorHiddenInGame(!bVisible);
+		}
+	}
+}

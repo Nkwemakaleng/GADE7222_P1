@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "BTService_UpdateBotState.h"
+#include "BBKeys.h"
 #include "BTTask_FireAtTarget.generated.h"
 
 UCLASS()
@@ -18,11 +18,15 @@ public:
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 	UPROPERTY(EditAnywhere, Category = "Bot")
-	float MinFireDistance = 200.f;
+	float MinFireDistance = 400.f;
 
 	UPROPERTY(EditAnywhere, Category = "Bot")
-	float MaxFireDistance = 1800.f;
+	float MaxFireDistance = 1200.f;
+
+	UPROPERTY(EditAnywhere, Category = "Bot")
+	float MaxEngageDuration = 6.0f;
 
 private:
 	AActor* GetTarget(UBehaviorTreeComponent& OwnerComp) const;
+	float AccumulatedTime = 0.0f;
 };

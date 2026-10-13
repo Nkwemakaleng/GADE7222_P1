@@ -121,6 +121,8 @@ protected:
 	FTimerHandle RegenDelayTimer;
 	bool bCanRegenStamina = false;
 	
+	//Handles disabling controls and respawning
+	UFUNCTION()
 	void HandleDeath(AActor* Killer);
 
 	FTimerHandle RespawnTimerHandle;

@@ -17,13 +17,12 @@ EBTNodeResult::Type UBTTask_Patrol::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI ? AI->GetPawn() : nullptr);
 	if (!AI || !BB || !Bot) return EBTNodeResult::Failed;
 
-	FVector Target = BB->GetValueAsVector(BotBBKeys::PatrolPoint);
-	if (Target.IsNearlyZero())
-	{
-		Target = Bot->GetActorLocation();
-	}
+	AccumulatedTime = 0.f;
+	PickRandomPatrolPoint(Bot, BB, GetWorld());
 
-	AI->MoveToLocation(Target, ArrivalRadius);
+	const FVector Target = BB->GetValueAsVector(BotBBKeys::PatrolPoint);
+	UE_LOG(LogTemp, Warning, TEXT("Patrol: picked target %s"), *Target.ToString());
+
 	return EBTNodeResult::InProgress;
 }
 
@@ -35,19 +34,59 @@ void UBTTask_Patrol::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	if (!AI || !BB || !Bot) { FinishLatentTask(OwnerComp, EBTNodeResult::Failed); return; }
 
 	const FVector Target = BB->GetValueAsVector(BotBBKeys::PatrolPoint);
+	const FVector BotLoc = Bot->GetActorLocation();
 
-	if (FVector::Dist(Bot->GetActorLocation(), Target) < ArrivalRadius)
+	FVector ToTarget = Target - BotLoc;
+	ToTarget.Z = 0.f;
+	const float Dist = ToTarget.Size();
+
+	// --- Arrived ---
+	if (Dist < ArrivalRadius)
 	{
-		// Pick a new patrol point
-		UNavigationSystemV1* Nav = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
+
+	// --- Smoothly turn control rotation toward the target ---
+	const FRotator CurrentControlRot = AI->GetControlRotation();
+	const FRotator DesiredRot = FRotator(0.f, ToTarget.Rotation().Yaw, 0.f);
+	const FRotator NewControlRot = FMath::RInterpTo(CurrentControlRot, DesiredRot, DeltaSeconds, TurnInterpSpeed);
+	AI->SetControlRotation(NewControlRot);
+
+	// --- Move forward using the same function the player uses ---
+	Bot->MoveForward(1.0f);
+
+	// --- Timeout safety ---
+	AccumulatedTime += DeltaSeconds;
+	if (AccumulatedTime > MaxPatrolTime)
+	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	}
+}
+
+void UBTTask_Patrol::PickRandomPatrolPoint(ABaseCharacter* Bot, UBlackboardComponent* BB, UWorld* World)
+{
+	if (!Bot || !BB) return;
+
+	const FVector Origin = Bot->GetActorLocation();
+
+	// Try navmesh first for a valid reachable point
+	if (World)
+	{
+		UNavigationSystemV1* Nav = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
 		if (Nav)
 		{
 			FNavLocation Result;
-			if (Nav->GetRandomReachablePointInRadius(Bot->GetActorLocation(), PatrolSearchRadius, Result))
+			if (Nav->GetRandomReachablePointInRadius(Origin, PatrolSearchRadius, Result))
 			{
 				BB->SetValueAsVector(BotBBKeys::PatrolPoint, Result.Location);
-				AI->MoveToLocation(Result.Location, ArrivalRadius);
+				return;
 			}
 		}
 	}
+
+	// Fallback: raw direction if navmesh unavailable
+	const FVector RandDir = FMath::VRand();
+	const FVector RandPoint = Origin + FVector(RandDir.X, RandDir.Y, 0.f) * FMath::FRandRange(500.f, PatrolSearchRadius);
+	BB->SetValueAsVector(BotBBKeys::PatrolPoint, RandPoint);
 }

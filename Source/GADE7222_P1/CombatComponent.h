@@ -52,6 +52,12 @@ public:
 	{
 		return WeaponInventory.IsValidIndex(SlotIndex);
 	}
+	
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void DestroyAllWeapons();
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetWeaponsVisible(bool bVisible);
 protected:
 	virtual void BeginPlay() override;
 

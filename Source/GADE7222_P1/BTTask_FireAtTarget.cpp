@@ -2,6 +2,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "BaseCharacter.h"
+#include "DamageableInterface.h"
 
 UBTTask_FireAtTarget::UBTTask_FireAtTarget()
 {
@@ -13,11 +14,12 @@ EBTNodeResult::Type UBTTask_FireAtTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 {
 	AAIController* AI = OwnerComp.GetAIOwner();
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI ? AI->GetPawn() : nullptr);
-	if (!Bot) return EBTNodeResult::Failed;
+	if (!Bot || !AI) return EBTNodeResult::Failed;
 
 	AActor* Target = GetTarget(OwnerComp);
 	if (!Target) return EBTNodeResult::Failed;
 
+	AccumulatedTime = 0.f;
 	Bot->StartFire();
 	return EBTNodeResult::InProgress;
 }
@@ -28,7 +30,7 @@ void UBTTask_FireAtTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI ? AI->GetPawn() : nullptr);
 	AActor* Target = GetTarget(OwnerComp);
 
-	if (!Bot || !Target)
+	if (!Bot || !Target || !AI)
 	{
 		if (Bot) Bot->StopFire();
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
@@ -39,31 +41,56 @@ void UBTTask_FireAtTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	const FVector TargetLoc = Target->GetActorLocation();
 	const float Dist = FVector::Dist(BotLoc, TargetLoc);
 
-	// Face the target
-	const FRotator Look = (TargetLoc - BotLoc).Rotation();
-	Bot->SetActorRotation(FRotator(0.f, Look.Yaw, 0.f));
+	// --- Face target (control rotation, same as mouse) ---
+	FVector ToTarget = TargetLoc - BotLoc;
+	ToTarget.Z = 0.f;
+	const FRotator DesiredRot = FRotator(0.f, ToTarget.Rotation().Yaw, 0.f);
+	const FRotator NewControlRot = FMath::RInterpTo(AI->GetControlRotation(), DesiredRot, DeltaSeconds, 8.0f);
+	AI->SetControlRotation(NewControlRot);
 
-	// Move into range / strafe if needed
+	// --- Movement using the player's functions ---
+	const FVector ForwardDir = NewControlRot.Vector();
+
 	if (Dist > MaxFireDistance)
 	{
-		AI->MoveToActor(Target, MaxFireDistance * 0.8f);
+		// Close the gap
+		Bot->MoveForward(1.0f);
 	}
 	else if (Dist < MinFireDistance)
 	{
-		// Back up
-		const FVector Away = (BotLoc - TargetLoc).GetSafeNormal();
-		AI->MoveToLocation(BotLoc + Away * 400.f);
+		// Back off
+		Bot->MoveForward(-1.0f);
 	}
 	else
 	{
-		// Strafe
-		AI->StopMovement();
-		const FVector Right = FRotationMatrix(FRotator(0.f, Look.Yaw, 0.f)).GetUnitAxis(EAxis::Y);
-		Bot->AddMovementInput(Right, FMath::Sin(GetWorld()->TimeSeconds * 3.f));
+		// Strafe side to side using MoveRight
+		const float StrafeAmount = FMath::Sin(GetWorld()->TimeSeconds * 2.5f);
+		Bot->MoveRight(StrafeAmount);
 	}
 
-	// If target is dead, stop
-	if (!IDamageableInterface::Execute_IsAlive(Target))
+	// --- Safety exits ---
+	if (Target->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
+	{
+		if (!IDamageableInterface::Execute_IsAlive(Target))
+		{
+			Bot->StopFire();
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+			return;
+		}
+	}
+
+	if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+	{
+		if (!BB->GetValueAsBool(BotBBKeys::HasLineOfSight))
+		{
+			Bot->StopFire();
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			return;
+		}
+	}
+
+	AccumulatedTime += DeltaSeconds;
+	if (AccumulatedTime > MaxEngageDuration)
 	{
 		Bot->StopFire();
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);

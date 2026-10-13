@@ -33,6 +33,11 @@ ABaseCharacter::ABaseCharacter()
 	PlayerCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	PlayerCamera->bUsePawnControlRotation = false;
 
+	//Allows the AI Model to rotate to face the player
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
+	
 	UCharacterMovementComponent* CMC = GetCharacterMovement();
 	if (CMC)
 	{
@@ -242,14 +247,24 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 	{
 		DisableInput(PC);
 	}
-	GetCharacterMovement()->DisableMovement();
+	
+	if (UCharacterMovementComponent* CMC = GetCharacterMovement())
+	{
+		CMC->DisableMovement();
+	}
+
+	// --- NEW: destroy the equipped weapon so it disappears with the character ---
+	if (CombatComponent)
+	{
+		CombatComponent->DestroyAllWeapons();
+	}
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
 		this, &ABaseCharacter::Respawn, RespawnDelay, false);
 }
-//
+//Handles Respawnin via player start actor
 void ABaseCharacter::Respawn()
 {
 	AActor* Point = FindRandomRespawnPoint();
@@ -264,7 +279,7 @@ void ABaseCharacter::Respawn()
 	if (HealthComponent) HealthComponent->ResetHealth();
 	if (StaminaComponent) StaminaComponent->RestoreStamina(StaminaComponent->MaxStamina);
 
-	// Re-equip the starting loadout
+	// Re-equip the starting weapon
 	if (CombatComponent)
 	{
 		CombatComponent->InitializeWithWeapons(StartingWeapons);
