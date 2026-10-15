@@ -46,6 +46,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (!WeaponSlot2Action) WeaponSlot2Action = PC->WeaponSlot2Action;
 		if (!SprintAction) SprintAction = PC->SprintAction;
 		if (!InteractAction) InteractAction = PC->InteractAction;
+		if (!DashAction) DashAction = PC->DashAction;
 		UE_LOG(LogTemp, Warning, TEXT("PlayerCharacter: Pulled input actions from controller. MoveForward=%s"),
 			MoveForwardAction ? TEXT("Valid") : TEXT("NULL"));
 	}
@@ -96,6 +97,10 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (InteractAction)
 		{
 			EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerCharacter::InteractInput);
+		}
+		if (DashAction)
+		{
+			EnhancedInput->BindAction(DashAction, ETriggerEvent::Started, this, &APlayerCharacter::DashInput);
 		}
 	}
 }
@@ -171,4 +176,10 @@ void APlayerCharacter::SprintInput(const FInputActionValue& Value)
 void APlayerCharacter::InteractInput(const FInputActionValue& Value)
 {
 	TryInteract();
+}
+void APlayerCharacter::DashInput(const FInputActionValue& Value)
+{
+	// Dash in the direction the player is currently moving
+	// (falls back to facing forward if stationary — handled in TryDash)
+	TryDash(FVector::ZeroVector);
 }

@@ -8,6 +8,7 @@ AAmmoPickup::AAmmoPickup()
 	InteractPrompt = FText::FromString(TEXT("Pick up Ammo"));
 	bAutoPickupOnOverlap = true;
 	bDestroyOnPickup = true;
+	Category= EPickupCategory::Ammo;
 }
 //Handles ammo adding and Weapon adding
 bool AAmmoPickup::OnPickedUp_Implementation(AActor* Interactor)

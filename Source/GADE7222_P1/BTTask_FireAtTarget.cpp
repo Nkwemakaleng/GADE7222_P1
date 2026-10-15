@@ -3,6 +3,7 @@
 #include "AIController.h"
 #include "BaseCharacter.h"
 #include "DamageableInterface.h"
+#include "CombatComponent.h"
 
 UBTTask_FireAtTarget::UBTTask_FireAtTarget()
 {
@@ -19,7 +20,34 @@ EBTNodeResult::Type UBTTask_FireAtTarget::ExecuteTask(UBehaviorTreeComponent& Ow
 	AActor* Target = GetTarget(OwnerComp);
 	if (!Target) return EBTNodeResult::Failed;
 
+	// --- Pick the best weapon for combat right now ---
+	if (Bot->CombatComponent)
+	{
+		Bot->CombatComponent->SwitchToBestCombatWeapon();
+	}
+	// Dash toward the target if we're far away, to close the gap fast
+if (Bot->CombatComponent)
+{
+	UCombatComponent* CC = Bot->CombatComponent;
+	if (CC->FindBestCombatWeaponIndex() != INDEX_NONE)
+	{
+		if (Target && Bot->CanDash())
+		{
+			const FVector BotLoc = Bot->GetActorLocation();
+			const FVector TargetLoc = Target->GetActorLocation();
+			const float Dist = FVector::Dist(BotLoc, TargetLoc);
+
+			if (Dist > 1200.f)
+			{
+				FVector Dir = (TargetLoc - BotLoc);
+				Dir.Z = 0.f;
+				Bot->TryDash(Dir.GetSafeNormal());
+			}
+		}
+	}
+}
 	AccumulatedTime = 0.f;
+	AI->SetFocalPoint(Target->GetActorLocation());
 	Bot->StartFire();
 	return EBTNodeResult::InProgress;
 }

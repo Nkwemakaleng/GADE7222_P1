@@ -191,11 +191,37 @@ void ABaseCharacter::PickupWeapon(TSubclassOf<AWeaponBase> WeaponClass, int32 Am
 
 void ABaseCharacter::ReceiveDamage_Implementation(float DamageAmount, AActor* DamageCauser, const FVector& HitLocation)
 {
+	// Ignore if already dead
+	if (HealthComponent && HealthComponent->IsDead()) return;
+
+	// --- Retaliation: remember who hit us ---
+	if (DamageCauser && DamageCauser != this)
+	{
+		LastAttacker = DamageCauser;
+		LastAttackTime = GetWorld()->TimeSeconds;
+	}
+
+	// --- Broadcast for listeners (HUD, quests, etc.) ---
+	OnDamaged.Broadcast(DamageAmount, DamageCauser);
+
+	// --- Apply the damage ---
 	if (HealthComponent)
 	{
 		HealthComponent->ApplyDamage(DamageAmount, DamageCauser);
 	}
 }
+
+AActor* ABaseCharacter::GetLastAttacker() const
+{
+	return LastAttacker.Get();
+}
+
+float ABaseCharacter::GetTimeSinceLastAttacked() const
+{
+	if (!GetWorld()) return 9999.f;
+	return GetWorld()->TimeSeconds - LastAttackTime;
+}
+
 
 float ABaseCharacter::GetCurrentHealth_Implementation() const
 {
@@ -298,4 +324,77 @@ AActor* ABaseCharacter::FindRandomRespawnPoint() const
 
 	if (Points.Num() == 0) return nullptr;
 	return Points[FMath::RandRange(0, Points.Num() - 1)];
+}
+
+bool ABaseCharacter::CanDash() const
+{
+	if (bIsDashing) return false;
+
+	UWorld* World = GetWorld();
+	if (!World) return false;
+
+	if (World->TimeSeconds - LastDashTime < DashCooldown) return false;
+
+	// Air dash check
+	if (!bCanAirDash)
+	{
+		if (const UCharacterMovementComponent* CMC = GetCharacterMovement())
+		{
+			if (CMC->IsFalling()) return false;
+		}
+	}
+
+	// Stamina check
+	if (StaminaComponent && DashStaminaCost > 0.f)
+	{
+		if (StaminaComponent->CurrentStamina < DashStaminaCost) return false;
+	}
+
+	return true;
+}
+
+void ABaseCharacter::TryDash(const FVector& Direction)
+{
+	if (!CanDash()) return;
+
+	// --- Resolve direction ---
+	FVector Dir = Direction;
+	if (Dir.IsNearlyZero())
+	{
+		// Prefer current velocity's horizontal direction
+		Dir = GetVelocity();
+		Dir.Z = 0.f;
+
+		// Not moving? Fall back to controller's facing
+		if (Dir.SizeSquared() < 100.f)
+		{
+			Dir = GetControlRotation().Vector();
+			Dir.Z = 0.f;
+		}
+	}
+
+	Dir = Dir.GetSafeNormal();
+
+	// --- Consume stamina ---
+	if (StaminaComponent && DashStaminaCost > 0.f)
+	{
+		StaminaComponent->ConsumeStamina(DashStaminaCost);
+	}
+
+	// --- Apply impulse ---
+	bIsDashing = true;
+	LastDashTime = GetWorld()->TimeSeconds;
+
+	// LaunchCharacter replaces XY velocity, preserves Z
+	LaunchCharacter(Dir * DashSpeed, /*bXYOverride=*/ true, /*bZOverride=*/ false);
+
+	// Reset the "dashing" flag after DashDuration
+	GetWorldTimerManager().SetTimer(DashEndHandle, this, &ABaseCharacter::EndDash, DashDuration, false);
+
+	UE_LOG(LogTemp, Verbose, TEXT("%s dashed toward %s"), *GetName(), *Dir.ToString());
+}
+
+void ABaseCharacter::EndDash()
+{
+	bIsDashing = false;
 }

@@ -11,6 +11,16 @@ class URotatingMovementComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPickupConsumedSignature, APickupBase*, Pickup, AActor*, Interactor);
 
+UENUM(BlueprintType)
+enum class EPickupCategory : uint8
+{
+	Generic  UMETA(DisplayName = "Generic"),
+	Health   UMETA(DisplayName = "Health"),
+	Weapon   UMETA(DisplayName = "Weapon"),   // gives the gun AND its ammo
+	Ammo     UMETA(DisplayName = "Ammo"),     // ammo-only refill
+	Key      UMETA(DisplayName = "Key")
+};
+
 UCLASS(Abstract, Blueprintable)
 class GADE7222_P1_API APickupBase : public AActor, public IInteractableInterface
 {
@@ -59,7 +69,10 @@ public:
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	virtual FText GetInteractPrompt_Implementation() const override;
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
-
+	
+	// Category used by AI / quests to classify this pickup. Overridden by children.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pickup")
+	EPickupCategory Category = EPickupCategory::Generic;
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

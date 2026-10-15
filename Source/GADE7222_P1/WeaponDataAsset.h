@@ -51,4 +51,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stats")
 	UAnimMontage* FireAnimation;
+	
+	// Higher priority = preferred for combat when viable (has ammo, or infinite)
+	// Pistol (default) should be low, specialized weapons higher.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stats")
+	int32 CombatPriority = 0;
 };

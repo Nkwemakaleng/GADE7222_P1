@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
 #include "BBKeys.h"
+#include "PickupBase.h"
 #include "BTService_UpdateBotState.generated.h"
 
 UCLASS()
@@ -35,8 +36,8 @@ private:
 	// Finds the nearest other ABaseCharacter that the bot can actually see (LOS check)
 	AActor* FindNearestVisibleTarget(class ABaseCharacter* Bot) const;
 
-	// Finds the nearest pickup whose class name contains TagFragment
-	AActor* FindNearestPickupByTag(class ABaseCharacter* Bot, const FString& TagFragment) const;
+	//Updated to find pickups by category 
+	AActor* FindNearestPickupByCategory(class ABaseCharacter* Bot, EPickupCategory Category) const;
 
 	// Does a line trace and returns true if clear
 	bool HasLineOfSight(class ABaseCharacter* Bot, AActor* Target) const;

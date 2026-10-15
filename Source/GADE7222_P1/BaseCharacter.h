@@ -10,9 +10,13 @@ class UHealthComponent;
 class UStaminaComponent;
 class AWeaponBase;
 
+// Fires whenever this character takes damage
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamagedSignature, float, DamageAmount, AActor*, DamageCauser);
+	
 UCLASS(Abstract)
 class GADE7222_P1_API ABaseCharacter : public ACharacter, public IDamageableInterface
 {
+	
 	GENERATED_BODY()
 
 public:
@@ -111,6 +115,49 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Respawn")
 	AActor* FindRandomRespawnPoint() const;
+	
+	// --- DASH ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash")
+	float DashSpeed = 2600.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash")
+	float DashDuration = 0.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash")
+	float DashCooldown = 1.0f;
+
+	// Can the character dash while airborne?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash")
+	bool bCanAirDash = false;
+
+	// dash costs stamina
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash")
+	float DashStaminaCost = 15.f;
+
+	UFUNCTION(BlueprintCallable, Category = "Dash")
+	void TryDash(const FVector& Direction = FVector::ZeroVector);
+
+	UFUNCTION(BlueprintPure, Category = "Dash")
+	bool CanDash() const;
+
+	UFUNCTION(BlueprintPure, Category = "Dash")
+	bool IsDashing() const { return bIsDashing; }
+	
+	// --- RETALIATION ---
+	// How long the bot stays locked onto its attacker after being hit
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Retaliation")
+	float RetaliationDuration = 8.0f;
+
+
+	UPROPERTY(BlueprintAssignable, Category = "Combat|Retaliation")
+	FOnDamagedSignature OnDamaged;
+
+	// The most recent attacker (nullptr if none / expired)
+	UFUNCTION(BlueprintPure, Category = "Combat|Retaliation")
+	AActor* GetLastAttacker() const;
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Retaliation")
+	float GetTimeSinceLastAttacked() const;
 protected:
 	virtual void BeginPlay() override;
 	void Tick(float DeltaTime);
@@ -126,4 +173,14 @@ protected:
 	void HandleDeath(AActor* Killer);
 
 	FTimerHandle RespawnTimerHandle;
+	
+	void EndDash();
+    
+    FTimerHandle DashEndHandle;
+	bool bIsDashing = false;
+    float LastDashTime = -1000.f;
+	
+	//-------Retaliation-------
+	TWeakObjectPtr<AActor> LastAttacker;
+    float LastAttackTime = -1000.f;
 };

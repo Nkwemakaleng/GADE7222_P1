@@ -252,3 +252,54 @@ void UCombatComponent::SetWeaponsVisible(bool bVisible)
 		}
 	}
 }
+
+bool UCombatComponent::HasWeaponInSlot(int32 SlotIndex) const
+{
+	return WeaponInventory.IsValidIndex(SlotIndex);
+}
+
+
+AWeaponBase* UCombatComponent::GetWeaponInSlot(int32 SlotIndex) const
+{
+	return WeaponInventory.IsValidIndex(SlotIndex) ? WeaponInventory[SlotIndex] : nullptr;
+}
+
+int32 UCombatComponent::FindBestCombatWeaponIndex() const
+{
+	int32 BestIndex = INDEX_NONE;
+	int32 BestPriority = MIN_int32;
+
+	for (int32 i = 0; i < WeaponInventory.Num(); i++)
+	{
+		AWeaponBase* W = WeaponInventory[i];
+		if (!W) continue;
+
+		const UWeaponDataAsset* Data = W->GetWeaponData();
+		if (!Data) continue;
+
+		// Is this weapon usable right now?
+		const bool bHasAmmo = Data->bInfiniteAmmo || W->GetCurrentAmmo() > 0;
+		if (!bHasAmmo) continue;
+
+		// Prefer higher priority
+		if (Data->CombatPriority > BestPriority)
+		{
+			BestPriority = Data->CombatPriority;
+			BestIndex = i;
+		}
+	}
+
+	return BestIndex;
+}
+
+bool UCombatComponent::SwitchToBestCombatWeapon()
+{
+	const int32 BestIndex = FindBestCombatWeaponIndex();
+
+	// No viable weapon, or already using it
+	if (BestIndex == INDEX_NONE) return false;
+	if (BestIndex == CurrentWeaponIndex) return false;
+
+	SwitchWeapon(BestIndex);
+	return true;
+}

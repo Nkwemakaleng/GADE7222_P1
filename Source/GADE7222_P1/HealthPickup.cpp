@@ -7,6 +7,7 @@ AHealthPickup::AHealthPickup()
 	InteractPrompt = FText::FromString(TEXT("Pick up Health"));
 	bAutoPickupOnOverlap = true;
 	bDestroyOnPickup = true;
+	Category = EPickupCategory::Health;
 }
 
 bool AHealthPickup::OnPickedUp_Implementation(AActor* Interactor)

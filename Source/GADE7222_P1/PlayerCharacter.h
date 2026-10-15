@@ -46,12 +46,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* InteractAction;
-	//Hud Properties
+	
+	//------------Hud Properties--------------
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<class UHUDWidget> HUDWidgetClass;
 
 	UPROPERTY()
 	class UHUDWidget* HUDWidget;
+	
+	//------------Dash Properties--------------
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* DashAction;
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -68,4 +73,5 @@ protected:
 	void WeaponSlot2Input(const struct FInputActionValue& Value);
 	void SprintInput(const struct FInputActionValue& Value);
 	void InteractInput(const struct FInputActionValue& Value);
+	void DashInput(const struct FInputActionValue& Value);
 };

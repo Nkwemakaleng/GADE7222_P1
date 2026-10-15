@@ -8,6 +8,7 @@ AWeaponPickup::AWeaponPickup()
 	InteractPrompt = FText::FromString(TEXT("Pick up Weapon"));
 	bAutoPickupOnOverlap = false;    // Require E press
 	bDestroyOnPickup = true;
+	Category = EPickupCategory::Weapon;
 }
 
 bool AWeaponPickup::OnPickedUp_Implementation(AActor* Interactor)

@@ -48,16 +48,30 @@ public:
 	void InitializeWithWeapons(const TArray<TSubclassOf<class AWeaponBase>>& Weapons);
 
 	UFUNCTION(BlueprintPure, Category = "Combat")
-	bool HasWeaponInSlot(int32 SlotIndex) const
-	{
-		return WeaponInventory.IsValidIndex(SlotIndex);
-	}
+	bool HasWeaponInSlot(int32 SlotIndex) const;
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void DestroyAllWeapons();
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetWeaponsVisible(bool bVisible);
+	
+	// Returns the index of the best weapon to use right now (highest CombatPriority with ammo).
+	// Returns INDEX_NONE if no viable weapon exists.
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	int32 FindBestCombatWeaponIndex() const;
+
+	// Switches to the best weapon if it's not already equipped.
+	// Returns true if a switch happened.
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	bool SwitchToBestCombatWeapon();
+
+	// Convenience: does the bot have any weapon at all?
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	bool HasAnyWeapon() const { return WeaponInventory.Num() > 0; }
+	
+	UFUNCTION(BlueprintPure, Category = "Combat")
+    AWeaponBase* GetWeaponInSlot(int32 SlotIndex) const;
 protected:
 	virtual void BeginPlay() override;
 
