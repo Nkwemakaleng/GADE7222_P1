@@ -72,10 +72,21 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "Combat")
     AWeaponBase* GetWeaponInSlot(int32 SlotIndex) const;
+	
+	// Max weapons this character can carry
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int32 MaxWeaponSlots = 4;
+
+	// Would this character benefit from a weapon or ammo pickup?
+	// Returns true if:
+	//   - We have room for another weapon, OR
+	//   - Any owned non-infinite weapon is empty
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	bool WantsWeaponOrAmmoPickup() const;
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	TArray<AWeaponBase*> WeaponInventory;
 
 	UPROPERTY()

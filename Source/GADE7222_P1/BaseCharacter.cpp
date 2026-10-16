@@ -131,16 +131,30 @@ void ABaseCharacter::TickSprint(float DeltaTime)
 	}
 }
 
-// ---------------- INTERACTION ----------------
+// ---------------- IINTERACTION ----------------
 
 void ABaseCharacter::UpdateInteractionFocus()
 {
 	FocusedInteractable = nullptr;
 
-	if (!PlayerCamera) return;
+	// Prefer camera (players), fall back to controller view (AI)
+	FVector Start;
+	FVector Forward;
 
-	FVector Start = PlayerCamera->GetComponentLocation();
-	FVector End = Start + PlayerCamera->GetForwardVector() * InteractionRange;
+	if (PlayerCamera)
+	{
+		Start = PlayerCamera->GetComponentLocation();
+		Forward = PlayerCamera->GetForwardVector();
+	}
+	else if (Controller)
+	{
+		FRotator ViewRot;
+		Controller->GetPlayerViewPoint(Start, ViewRot);
+		Forward = ViewRot.Vector();
+	}
+	else return;
+
+	FVector End = Start + Forward * InteractionRange;
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
@@ -213,6 +227,11 @@ void ABaseCharacter::ReceiveDamage_Implementation(float DamageAmount, AActor* Da
 
 AActor* ABaseCharacter::GetLastAttacker() const
 {
+	// Forget the attacker if it's been too long
+	if (GetWorld() && (GetWorld()->TimeSeconds - LastAttackTime) > RetaliationDuration)
+	{
+		return nullptr;
+	}
 	return LastAttacker.Get();
 }
 

@@ -57,46 +57,24 @@ void UBTTask_FireAtTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	AAIController* AI = OwnerComp.GetAIOwner();
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI ? AI->GetPawn() : nullptr);
 	AActor* Target = GetTarget(OwnerComp);
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 
-	if (!Bot || !Target || !AI)
+	if (!Bot || !AI || !BB)
 	{
 		if (Bot) Bot->StopFire();
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
 
-	const FVector BotLoc = Bot->GetActorLocation();
-	const FVector TargetLoc = Target->GetActorLocation();
-	const float Dist = FVector::Dist(BotLoc, TargetLoc);
-
-	// --- Face target (control rotation, same as mouse) ---
-	FVector ToTarget = TargetLoc - BotLoc;
-	ToTarget.Z = 0.f;
-	const FRotator DesiredRot = FRotator(0.f, ToTarget.Rotation().Yaw, 0.f);
-	const FRotator NewControlRot = FMath::RInterpTo(AI->GetControlRotation(), DesiredRot, DeltaSeconds, 8.0f);
-	AI->SetControlRotation(NewControlRot);
-
-	// --- Movement using the player's functions ---
-	const FVector ForwardDir = NewControlRot.Vector();
-
-	if (Dist > MaxFireDistance)
+	// --- Target gone (dead or cleared from BB) ---
+	if (!Target)
 	{
-		// Close the gap
-		Bot->MoveForward(1.0f);
-	}
-	else if (Dist < MinFireDistance)
-	{
-		// Back off
-		Bot->MoveForward(-1.0f);
-	}
-	else
-	{
-		// Strafe side to side using MoveRight
-		const float StrafeAmount = FMath::Sin(GetWorld()->TimeSeconds * 2.5f);
-		Bot->MoveRight(StrafeAmount);
+		Bot->StopFire();
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
 	}
 
-	// --- Safety exits ---
+	// --- Target died ---
 	if (Target->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
 	{
 		if (!IDamageableInterface::Execute_IsAlive(Target))
@@ -107,16 +85,48 @@ void UBTTask_FireAtTarget::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 		}
 	}
 
-	if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
+	const bool bHasLOS = BB->GetValueAsBool(BotBBKeys::HasLineOfSight);
+
+	const FVector BotLoc = Bot->GetActorLocation();
+	const FVector TargetLoc = Target->GetActorLocation();
+	const float Dist = FVector::Dist(BotLoc, TargetLoc);
+
+	// --- Face target regardless of LOS (we may still be chasing) ---
+	FVector ToTarget = TargetLoc - BotLoc;
+	ToTarget.Z = 0.f;
+	const FRotator DesiredRot = FRotator(0.f, ToTarget.Rotation().Yaw, 0.f);
+	const FRotator NewControlRot = FMath::RInterpTo(AI->GetControlRotation(), DesiredRot, DeltaSeconds, 8.0f);
+	AI->SetControlRotation(NewControlRot);
+
+	// --- Movement: always keep chasing until we're in the sweet spot ---
+	if (Dist > MaxFireDistance)
 	{
-		if (!BB->GetValueAsBool(BotBBKeys::HasLineOfSight))
+		Bot->MoveForward(1.0f);
+	}
+	else if (Dist < MinFireDistance)
+	{
+		Bot->MoveForward(-1.0f);
+	}
+	else
+	{
+		// In range — only strafe if we can actually see the target
+		if (bHasLOS)
 		{
-			Bot->StopFire();
-			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-			return;
+			Bot->MoveRight(FMath::Sin(GetWorld()->TimeSeconds * 2.5f));
 		}
 	}
 
+	// --- Firing is gated on LOS, but the task KEEPS RUNNING either way ---
+	if (bHasLOS && Dist < MaxFireDistance)
+	{
+		Bot->StartFire();
+	}
+	else
+	{
+		Bot->StopFire();
+	}
+
+	// --- Timeout: only exit when engagement has lasted too long ---
 	AccumulatedTime += DeltaSeconds;
 	if (AccumulatedTime > MaxEngageDuration)
 	{

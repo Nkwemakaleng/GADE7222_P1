@@ -57,7 +57,15 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	BB->SetValueAsObject(BotBBKeys::HealthPickup,
 		FindNearestPickupByCategory(Bot, EPickupCategory::Health));
 	BB->SetValueAsObject(BotBBKeys::AmmoPickup,
-		FindNearestPickupByCategory(Bot, EPickupCategory::Weapon));
+		FindNearestPickupByCategory(Bot, EPickupCategory::Ammo));
+	
+	AActor* WeaponP = FindNearestPickupByCategory(Bot, EPickupCategory::Ammo);
+    BB->SetValueAsObject(BotBBKeys::AmmoPickup, WeaponP);
+    
+    UE_LOG(LogTemp, Warning, TEXT("[AI] Bot=%s AmmoPickup=%s WantsPickup=%d"),
+        *Bot->GetName(),
+        WeaponP ? *WeaponP->GetName() : TEXT("NULL"),
+        Bot->CombatComponent ? Bot->CombatComponent->WantsWeaponOrAmmoPickup() : -1);
 
 	UpdateIntent(Bot, BB);
 }
@@ -158,7 +166,7 @@ void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardCom
 	AActor* Target   = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::TargetActor));
 	AActor* HealthP  = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::HealthPickup));
 	AActor* WeaponP  = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::AmmoPickup));
-
+	
 	EBotIntent Intent = EBotIntent::Patrol;
 
 	// Priority 1: Retreat if critically hurt
@@ -172,9 +180,7 @@ void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardCom
 		Intent = EBotIntent::Engage;
 	}
 	// Priority 3: No target, but we need a weapon or ammo → go get it
-	// "Do I need a weapon/ammo?" — no viable combat weapon available right now
-	const bool bNeedsWeaponOrAmmo = (Bot->CombatComponent->FindBestCombatWeaponIndex() == INDEX_NONE);
-	if (bNeedsWeaponOrAmmo && WeaponP)
+	else if (Bot->CombatComponent->WantsWeaponOrAmmoPickup() && WeaponP)
 	{
 		Intent = EBotIntent::SeekAmmo;
 	}
@@ -183,6 +189,7 @@ void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardCom
 	{
 		Intent = EBotIntent::SeekHealth;
 	}
-
 	BB->SetValueAsEnum(BotBBKeys::CurrentIntent, static_cast<uint8>(Intent));
+	UE_LOG(LogTemp, Warning, TEXT("[AI] %s Intent=%d (0=Patrol 1=Engage 2=SeekHealth 3=SeekAmmo 4=Flee)"),
+	*Bot->GetName(), (int32)Intent);
 }

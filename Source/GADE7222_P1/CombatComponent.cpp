@@ -303,3 +303,24 @@ bool UCombatComponent::SwitchToBestCombatWeapon()
 	SwitchWeapon(BestIndex);
 	return true;
 }
+
+bool UCombatComponent::WantsWeaponOrAmmoPickup() const
+{
+	// Case 1: We have room for more weapons (handles "doesn't possess the secondary")
+	if (WeaponInventory.Num() < MaxWeaponSlots)
+	{
+		return true;
+	}
+
+	// Case 2: Any owned weapon that isn't infinite has run dry
+	for (AWeaponBase* W : WeaponInventory)
+	{
+		if (!W) continue;
+		const UWeaponDataAsset* Data = W->GetWeaponData();
+		if (!Data) continue;
+		if (Data->bInfiniteAmmo) continue;
+		if (W->GetCurrentAmmo() <= 0) return true;
+	}
+
+	return false;
+}
