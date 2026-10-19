@@ -29,4 +29,5 @@ public:
 private:
 	AActor* GetTarget(UBehaviorTreeComponent& OwnerComp) const;
 	float AccumulatedTime = 0.0f;
+	float StuckTime = 0.0f;
 };

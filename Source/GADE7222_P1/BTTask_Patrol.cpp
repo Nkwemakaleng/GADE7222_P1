@@ -56,6 +56,22 @@ void UBTTask_Patrol::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	// --- Move forward using the same function the player uses ---
 	Bot->MoveForward(1.0f);
 
+	// --- Stuck check ---
+	if (Bot->GetVelocity().SizeSquared2D() < 100.f)
+	{
+		StuckTime += DeltaSeconds;
+		if (StuckTime > 2.0f)
+		{
+			// We are stuck against geometry, pick a new point
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+			return;
+		}
+	}
+	else
+	{
+		StuckTime = 0.f;
+	}
+
 	// --- Timeout safety ---
 	AccumulatedTime += DeltaSeconds;
 	if (AccumulatedTime > MaxPatrolTime)

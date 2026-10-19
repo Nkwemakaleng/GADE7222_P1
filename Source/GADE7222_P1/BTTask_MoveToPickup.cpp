@@ -18,12 +18,14 @@ EBTNodeResult::Type UBTTask_MoveToPickup::ExecuteTask(UBehaviorTreeComponent& Ow
 	if (!AI || !BB || !Bot) return EBTNodeResult::Failed;
 
 	AActor* Pickup = Cast<AActor>(BB->GetValueAsObject(PickupKeyName));
+	
+	UE_LOG(LogTemp, Warning, TEXT("[MoveToPickup] Entered. KeyName=%s Pickup=%s"), 
+		*PickupKeyName.ToString(), Pickup ? *Pickup->GetName() : TEXT("NULL"));
+
 	if (!Pickup) return EBTNodeResult::Failed;
 
 	AccumulatedTime = 0.0f;
-	UE_LOG(LogTemp, Warning, TEXT("[MoveToPickup] Entered. KeyName=%s Pickup=%s"),
-	*PickupKeyName.ToString(),
-	Pickup ? *Pickup->GetName() : TEXT("NULL"));
+	StuckTime = 0.0f;
 	return EBTNodeResult::InProgress;
 }
 
@@ -32,16 +34,14 @@ void UBTTask_MoveToPickup::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	AAIController* AI = OwnerComp.GetAIOwner();
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI ? AI->GetPawn() : nullptr);
-	if (!AI || !BB || !Bot)
-	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-		return;
-	}
+	if (!AI || !BB || !Bot) { FinishLatentTask(OwnerComp, EBTNodeResult::Failed); return; }
 
 	AActor* Pickup = Cast<AActor>(BB->GetValueAsObject(PickupKeyName));
-	if (!Pickup)
+	
+	// If pickup was consumed or removed, SUCCEED (don't fail) so the tree re-evaluates smoothly
+	if (!Pickup) 
 	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
 
@@ -52,32 +52,43 @@ void UBTTask_MoveToPickup::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	ToPickup.Z = 0.f;
 	const float Dist = ToPickup.Size();
 
-	// --- Arrived: try to consume ---
+	// --- Arrived ---
 	if (Dist <= PickupRange)
 	{
 		if (APickupBase* PB = Cast<APickupBase>(Pickup))
 		{
-			// Direct consume — no reliance on camera raycast
 			IInteractableInterface::Execute_Interact(Pickup, Bot);
 		}
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
 
-	// --- Face the pickup using control rotation ---
+	// --- Stuck check ---
+	if (Bot->GetVelocity().SizeSquared2D() < 100.f)
+	{
+		StuckTime += DeltaSeconds;
+		if (StuckTime > 2.0f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[MoveToPickup] Stuck! Aborting task."));
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			return;
+		}
+	}
+	else
+	{
+		StuckTime = 0.f;
+	}
+
+	// --- Face and Move ---
 	const FRotator DesiredRot = FRotator(0.f, ToPickup.Rotation().Yaw, 0.f);
 	const FRotator NewControlRot = FMath::RInterpTo(AI->GetControlRotation(), DesiredRot, DeltaSeconds, 8.0f);
 	AI->SetControlRotation(NewControlRot);
 
-	// --- Move forward (same function the player uses) ---
 	Bot->MoveForward(1.0f);
 
-	// --- Timeout so we never hang ---
 	AccumulatedTime += DeltaSeconds;
 	if (AccumulatedTime > MaxMoveTime)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveToPickup: timed out after %.1fs (dist to pickup %.1f)"),
-			MaxMoveTime, Dist);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 	}
 }

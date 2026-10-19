@@ -34,4 +34,5 @@ public:
 
 private:
 	float AccumulatedTime = 0.0f;
+	float StuckTime = 0.0f;
 };

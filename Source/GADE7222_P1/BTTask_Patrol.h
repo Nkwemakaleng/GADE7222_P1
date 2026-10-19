@@ -33,6 +33,6 @@ public:
 
 private:
 	float AccumulatedTime = 0.0f;
-
+	float StuckTime = 0.0f;
 	void PickRandomPatrolPoint(ABaseCharacter* Bot, UBlackboardComponent* BB, UWorld* World);
 };
