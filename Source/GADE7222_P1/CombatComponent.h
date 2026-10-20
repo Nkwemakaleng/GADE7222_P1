@@ -82,7 +82,7 @@ public:
 	//   - We have room for another weapon, OR
 	//   - Any owned non-infinite weapon is empty
 	UFUNCTION(BlueprintPure, Category = "Combat")
-	bool WantsWeaponOrAmmoPickup() const;
+	bool WantsWeaponOrAmmoPickup(TSubclassOf<class AWeaponBase> PickupClass) const;
 protected:
 	virtual void BeginPlay() override;
 

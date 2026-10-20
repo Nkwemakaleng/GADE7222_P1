@@ -8,6 +8,7 @@
 #include "PickupBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "WeaponPickup.h"
 
 UBTService_UpdateBotState::UBTService_UpdateBotState()
 {
@@ -59,13 +60,17 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	BB->SetValueAsObject(BotBBKeys::AmmoPickup,
 		FindNearestPickupByCategory(Bot, EPickupCategory::Ammo));
 	
+	// Find the pickup first
 	AActor* WeaponP = FindNearestPickupByCategory(Bot, EPickupCategory::Ammo);
-    BB->SetValueAsObject(BotBBKeys::AmmoPickup, WeaponP);
+	BB->SetValueAsObject(BotBBKeys::AmmoPickup, WeaponP);
     
-    UE_LOG(LogTemp, Warning, TEXT("[AI] Bot=%s AmmoPickup=%s WantsPickup=%d"),
-        *Bot->GetName(),
-        WeaponP ? *WeaponP->GetName() : TEXT("NULL"),
-        Bot->CombatComponent ? Bot->CombatComponent->WantsWeaponOrAmmoPickup() : -1);
+	// Since we filtered it in FindNearest, if WeaponP is valid, we definitely want it.
+	bool bWants = (WeaponP != nullptr);
+
+	UE_LOG(LogTemp, Warning, TEXT("[AI] Bot=%s AmmoPickup=%s WantsPickup=%d"),
+		*Bot->GetName(),
+		WeaponP ? *WeaponP->GetName() : TEXT("NULL"),
+		bWants ? 1 : 0);
 
 	UpdateIntent(Bot, BB);
 }
@@ -145,8 +150,20 @@ AActor* UBTService_UpdateBotState::FindNearestPickupByCategory(ABaseCharacter* B
 	for (AActor* A : AllPickups)
 	{
 		APickupBase* Pickup = Cast<APickupBase>(A);
-		if (!Pickup) continue;
-		if (Pickup->Category != Category) continue;
+		if (!Pickup || Pickup->Category != Category) continue;
+
+		// If it's a weapon, check if we actually want it
+		if (Category == EPickupCategory::Ammo)
+		{
+			AWeaponPickup* WP = Cast<AWeaponPickup>(A);
+			if (WP && Bot->CombatComponent)
+			{
+				if (!Bot->CombatComponent->WantsWeaponOrAmmoPickup(WP->WeaponClass))
+				{
+					continue; // Skip this pickup, we already have it and have enough ammo
+				}
+			}
+		}
 
 		const float D = FVector::DistSquared(Bot->GetActorLocation(), A->GetActorLocation());
 		if (D < BestDistSq) { BestDistSq = D; Best = A; }
@@ -180,7 +197,7 @@ void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardCom
 		Intent = EBotIntent::Engage;
 	}
 	// Priority 3: No target, but we need a weapon or ammo → go get it
-	else if (Bot->CombatComponent->WantsWeaponOrAmmoPickup() && WeaponP)
+	else if (WeaponP)
 	{
 		Intent = EBotIntent::SeekAmmo;
 	}

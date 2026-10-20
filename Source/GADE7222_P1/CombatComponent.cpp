@@ -304,23 +304,26 @@ bool UCombatComponent::SwitchToBestCombatWeapon()
 	return true;
 }
 
-bool UCombatComponent::WantsWeaponOrAmmoPickup() const
+bool UCombatComponent::WantsWeaponOrAmmoPickup(TSubclassOf<AWeaponBase> PickupClass) const
 {
-	// Case 1: We have room for more weapons (handles "doesn't possess the secondary")
-	if (WeaponInventory.Num() < MaxWeaponSlots)
-	{
-		return true;
-	}
+	if (!PickupClass) return false;
 
-	// Case 2: Any owned weapon that isn't infinite has run dry
+	// 1. Check if we already own this specific weapon
 	for (AWeaponBase* W : WeaponInventory)
 	{
-		if (!W) continue;
-		const UWeaponDataAsset* Data = W->GetWeaponData();
-		if (!Data) continue;
-		if (Data->bInfiniteAmmo) continue;
-		if (W->GetCurrentAmmo() <= 0) return true;
+		if (W && W->GetClass() == PickupClass)
+		{
+			const UWeaponDataAsset* Data = W->GetWeaponData();
+			if (!Data) return false;
+
+			// We have infinite ammo, we don't need this pickup
+			if (Data->bInfiniteAmmo) return false;
+
+			// We own it. Do we need ammo? Only pick up if less than half.
+			return W->GetCurrentAmmo() < (Data->MaxAmmoPool / 2);
+		}
 	}
 
-	return false;
+	// 2. We don't own it. Do we have a free slot?
+	return WeaponInventory.Num() < MaxWeaponSlots;
 }
