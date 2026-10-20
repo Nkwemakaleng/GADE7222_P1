@@ -20,7 +20,7 @@ AProjectileBase::AProjectileBase()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 
-	CollisionComp->OnComponentHit.AddDynamic(this, &AProjectileBase::OnHit);
+	CollisionComp->OnComponentBeginOverlap.AddDynamic(this, &AProjectileBase::OnOverlap);
 }
 
 void AProjectileBase::BeginPlay()
@@ -29,17 +29,15 @@ void AProjectileBase::BeginPlay()
 	SetLifeSpan(LifeSpan);
 }
 
-void AProjectileBase::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AProjectileBase::OnOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor && OtherActor != this && OtherActor != GetOwner())
+	if (!OtherActor || OtherActor == this || OtherActor == GetOwner()) return;
+	// Ignore other projectiles so shotgun pellets don't destroy each other on spawn
+	if (OtherActor->IsA<AProjectileBase>()) return; 
+
+	if (OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
 	{
-		// --- Interface-based damage ---
-		if (OtherActor->GetClass()->ImplementsInterface(UDamageableInterface::StaticClass()))
-		{
-			IDamageableInterface::Execute_ReceiveDamage(
-				OtherActor, Damage, GetOwner(), Hit.ImpactPoint);
-		}
+		IDamageableInterface::Execute_ReceiveDamage(OtherActor, Damage, GetOwner(), SweepResult.ImpactPoint);
 	}
 	Destroy();
 }

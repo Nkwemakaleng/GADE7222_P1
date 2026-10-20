@@ -5,6 +5,7 @@
 #include "DamageableInterface.h"
 #include "BaseCharacter.generated.h"
 
+
 class UCombatComponent;
 class UHealthComponent;
 class UStaminaComponent;
@@ -158,6 +159,18 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Combat|Retaliation")
 	float GetTimeSinceLastAttacked() const;
+	
+	// --- HEALTH BAR UI ---
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+    class UWidgetComponent* HealthBarWidgetComponent;
+    
+    // Set this to WBP_HealthBar in the Blueprint
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+    TSubclassOf<class UHealthBarWidget> HealthBarWidgetClass;
+    
+    // Helper to toggle visibility
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void SetHealthBarVisible(bool bVisible);
 protected:
 	virtual void BeginPlay() override;
 	void Tick(float DeltaTime);

@@ -12,15 +12,19 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/WidgetComponent.h"
+#include "HealthBarWidget.h"
 
 ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Set up Components
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 
+	//Set up Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 0.0f;
@@ -33,6 +37,14 @@ ABaseCharacter::ABaseCharacter()
 	PlayerCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	PlayerCamera->bUsePawnControlRotation = false;
 
+	// Setup Health Bar
+	HealthBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
+	HealthBarWidgetComponent->SetupAttachment(RootComponent);
+	HealthBarWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen); // Renders in screen space
+	HealthBarWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 110.f)); // 110 units above origin (head height)
+	HealthBarWidgetComponent->SetDrawSize(FVector2D(120.f, 15.f));
+	HealthBarWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
 	//Allows the AI Model to rotate to face the player
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationPitch = false;
@@ -51,6 +63,7 @@ ABaseCharacter::ABaseCharacter()
 		CMC->bOrientRotationToMovement = false;
 		CMC->bUseControllerDesiredRotation = true;
 	}
+	
 }
 
 void ABaseCharacter::BeginPlay()
@@ -64,6 +77,21 @@ void ABaseCharacter::BeginPlay()
 	if (HealthComponent)
 	{
 		HealthComponent->OnDeath.AddDynamic(this, &ABaseCharacter::HandleDeath);
+	}
+	// Setup Health Bar Widget
+	if (HealthBarWidgetComponent && HealthBarWidgetClass)
+	{
+		HealthBarWidgetComponent->SetWidgetClass(HealthBarWidgetClass);
+		UHealthBarWidget* Widget = Cast<UHealthBarWidget>(HealthBarWidgetComponent->GetUserWidgetObject());
+		if (Widget && HealthComponent)
+		{
+			Widget->SetHealthComponent(HealthComponent);
+		}
+	}
+	else
+	{
+		// If no widget class is set, hide it by default
+		HealthBarWidgetComponent->SetVisibility(false);
 	}
 }
 
@@ -305,6 +333,7 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 	}
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
+	SetHealthBarVisible(false);
 
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
 		this, &ABaseCharacter::Respawn, RespawnDelay, false);
@@ -334,6 +363,7 @@ void ABaseCharacter::Respawn()
 	{
 		EnableInput(PC);
 	}
+	
 }
 
 AActor* ABaseCharacter::FindRandomRespawnPoint() const
@@ -416,4 +446,12 @@ void ABaseCharacter::TryDash(const FVector& Direction)
 void ABaseCharacter::EndDash()
 {
 	bIsDashing = false;
+}
+
+void ABaseCharacter::SetHealthBarVisible(bool bVisible)
+{
+	if (HealthBarWidgetComponent)
+	{
+		HealthBarWidgetComponent->SetVisibility(bVisible);
+	}
 }

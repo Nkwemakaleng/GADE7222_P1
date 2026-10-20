@@ -59,7 +59,10 @@ void AProjectileWeapon::Fire()
 
 		AProjectileBase* Projectile = GetWorld()->SpawnActor<AProjectileBase>(
 			WeaponData->ProjectileClass, MuzzleLoc, SpreadRot, SpawnParams);
-
+		if (Projectile)
+		{
+			Projectile->SetProjectileDamage(WeaponData->Damage);
+		}
 		if (!Projectile)
 		{
 			UE_LOG(LogTemp, Error, TEXT("ProjectileWeapon::Fire - SpawnActor FAILED for projectile %d"), i);

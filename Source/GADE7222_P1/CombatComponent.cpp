@@ -111,17 +111,16 @@ void UCombatComponent::HandleWeaponPickup(TSubclassOf<AWeaponBase> WeaponClass, 
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(WeaponClass, SpawnParams);
-	if (NewWeapon)
-	{
-		NewWeapon->SetActorHiddenInGame(true);
-		NewWeapon->SetActorEnableCollision(false);
-		NewWeapon->SetActorTickEnabled(false);
-		
-		WeaponInventory.Add(NewWeapon);
-		NewWeapon->AddAmmo(AmmoAmount);
-		CurrentWeaponIndex = WeaponInventory.Num() - 1;
-		SwitchWeapon(CurrentWeaponIndex);
-	}
+    	if (NewWeapon)
+    	{
+    		WeaponInventory.Add(NewWeapon);
+    		NewWeapon->AddAmmo(AmmoAmount);
+    		
+    		// Auto-equip the new weapon (Pass the index directly)
+    		SwitchWeapon(WeaponInventory.Num() - 1);
+    		
+    		UE_LOG(LogTemp, Warning, TEXT("Picked up new weapon!"));
+    	}
 }
 
 void UCombatComponent::SwitchWeapon(int32 WeaponIndex)
