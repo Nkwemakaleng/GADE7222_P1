@@ -326,7 +326,7 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 		CMC->DisableMovement();
 	}
 
-	// --- NEW: destroy the equipped weapon so it disappears with the character ---
+	// --- Destroy the equipped weapon so it disappears with the character ---
 	if (CombatComponent)
 	{
 		CombatComponent->DestroyAllWeapons();
@@ -338,7 +338,7 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
 		this, &ABaseCharacter::Respawn, RespawnDelay, false);
 }
-//Handles Respawnin via player start actor
+//Handles Respawning via player start actor
 void ABaseCharacter::Respawn()
 {
 	AActor* Point = FindRandomRespawnPoint();
@@ -363,7 +363,7 @@ void ABaseCharacter::Respawn()
 	{
 		EnableInput(PC);
 	}
-	
+	SetHealthBarVisible(true);
 }
 
 AActor* ABaseCharacter::FindRandomRespawnPoint() const
