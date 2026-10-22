@@ -263,7 +263,7 @@ AWeaponBase* UCombatComponent::GetWeaponInSlot(int32 SlotIndex) const
 	return WeaponInventory.IsValidIndex(SlotIndex) ? WeaponInventory[SlotIndex] : nullptr;
 }
 
-int32 UCombatComponent::FindBestCombatWeaponIndex() const
+int32 UCombatComponent::FindBestCombatWeaponIndex(float DistanceToTarget) const
 {
 	int32 BestIndex = INDEX_NONE;
 	int32 BestPriority = MIN_int32;
@@ -276,11 +276,19 @@ int32 UCombatComponent::FindBestCombatWeaponIndex() const
 		const UWeaponDataAsset* Data = W->GetWeaponData();
 		if (!Data) continue;
 
-		// Is this weapon usable right now?
 		const bool bHasAmmo = Data->bInfiniteAmmo || W->GetCurrentAmmo() > 0;
 		if (!bHasAmmo) continue;
 
-		// Prefer higher priority
+		// --- Range-Based Filtering ---
+		// If we have a distance, and this is a Shotgun/Projectile, require closer range
+		if (DistanceToTarget > 0.0f && Data->WeaponType == EWeaponType::Projectile)
+		{
+			if (DistanceToTarget > 800.0f) 
+			{
+				continue; // Skip the shotgun, we are too far away
+			}
+		}
+
 		if (Data->CombatPriority > BestPriority)
 		{
 			BestPriority = Data->CombatPriority;
@@ -291,11 +299,10 @@ int32 UCombatComponent::FindBestCombatWeaponIndex() const
 	return BestIndex;
 }
 
-bool UCombatComponent::SwitchToBestCombatWeapon()
+bool UCombatComponent::SwitchToBestCombatWeapon(float DistanceToTarget)
 {
-	const int32 BestIndex = FindBestCombatWeaponIndex();
+	const int32 BestIndex = FindBestCombatWeaponIndex(DistanceToTarget);
 
-	// No viable weapon, or already using it
 	if (BestIndex == INDEX_NONE) return false;
 	if (BestIndex == CurrentWeaponIndex) return false;
 
@@ -307,7 +314,7 @@ bool UCombatComponent::WantsWeaponOrAmmoPickup(TSubclassOf<AWeaponBase> PickupCl
 {
 	if (!PickupClass) return false;
 
-	// 1. Check if we already own this specific weapon
+	// 1. Check if we already own this specific weapon class
 	for (AWeaponBase* W : WeaponInventory)
 	{
 		if (W && W->GetClass() == PickupClass)
@@ -315,11 +322,11 @@ bool UCombatComponent::WantsWeaponOrAmmoPickup(TSubclassOf<AWeaponBase> PickupCl
 			const UWeaponDataAsset* Data = W->GetWeaponData();
 			if (!Data) return false;
 
-			// We have infinite ammo, we don't need this pickup
+			// If we have infinite ammo, we NEVER want this pickup again
 			if (Data->bInfiniteAmmo) return false;
 
-			// We own it. Do we need ammo? Only pick up if less than half.
-			return W->GetCurrentAmmo() < (Data->MaxAmmoPool / 2);
+			// We own it. Only pick it up if our ammo is NOT completely full.
+			return W->GetCurrentAmmo() < Data->MaxAmmoPool;
 		}
 	}
 

@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "WeaponPickup.h"
+#include "AmmoPickup.h"
 
 UBTService_UpdateBotState::UBTService_UpdateBotState()
 {
@@ -29,6 +30,7 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	ABaseCharacter* Bot = Cast<ABaseCharacter>(AI->GetPawn());
 	if (!Bot) return;
 
+	// --- 1. TARGET ACQUISITION & RETALIATION ---
 	// --- Target: prefer our attacker during the retaliation window ---
     AActor* Target = nullptr;
     
@@ -54,7 +56,7 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
     // TargetActor is set regardless — the fire task will walk toward it even without LOS
     BB->SetValueAsObject(BotBBKeys::TargetActor, Target);
 
-	// Pickups (by category, not class name)
+	// --- 2. FIND PICKUPS (Strict Class Checking) ---
 	BB->SetValueAsObject(BotBBKeys::HealthPickup,
 		FindNearestPickupByCategory(Bot, EPickupCategory::Health));
 	BB->SetValueAsObject(BotBBKeys::AmmoPickup,
@@ -63,16 +65,18 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	// Find the pickup first
 	AActor* WeaponP = FindNearestPickupByCategory(Bot, EPickupCategory::Ammo);
 	BB->SetValueAsObject(BotBBKeys::AmmoPickup, WeaponP);
-    
-	// Since we filtered it in FindNearest, if WeaponP is valid, we definitely want it.
-	bool bWants = (WeaponP != nullptr);
-
-	UE_LOG(LogTemp, Warning, TEXT("[AI] Bot=%s AmmoPickup=%s WantsPickup=%d"),
-		*Bot->GetName(),
-		WeaponP ? *WeaponP->GetName() : TEXT("NULL"),
-		bWants ? 1 : 0);
-
+	
+	// --- 3. UPDATE INTENT ---
 	UpdateIntent(Bot, BB);
+	
+	// --- 4. DEBUG LOG (Read this in the Output Log!) ---
+	EBotIntent CurrentIntent = static_cast<EBotIntent>(BB->GetValueAsEnum(BotBBKeys::CurrentIntent));
+	FString TargetName = Target ? Target->GetName() : TEXT("NULL");
+	FString WeaponName = Bot->CombatComponent ? Bot->CombatComponent->GetCurrentWeaponName() : TEXT("None");
+	
+	UE_LOG(LogTemp, Warning, TEXT("[AI] Target=%s | Intent=%d | Weapon=%s | Ammo=%d"),
+		*TargetName, (int32)CurrentIntent, *WeaponName, 
+		Bot->CombatComponent ? Bot->CombatComponent->GetCurrentAmmo() : -1);
 }
 
 // ----------------------------------------------------------------
@@ -82,7 +86,6 @@ void UBTService_UpdateBotState::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 bool UBTService_UpdateBotState::HasLineOfSight(ABaseCharacter* Bot, AActor* Target) const
 {
 	if (!Bot || !Target) return false;
-
 	UWorld* World = Bot->GetWorld();
 	if (!World) return false;
 
@@ -95,10 +98,7 @@ bool UBTService_UpdateBotState::HasLineOfSight(ABaseCharacter* Bot, AActor* Targ
 	Params.AddIgnoredActor(Target);
 	Params.bTraceComplex = false;
 
-	const bool bHit = World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-
-	// If the trace hit nothing, LOS is clear
-	return !bHit;
+	return !World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
 }
 
 AActor* UBTService_UpdateBotState::FindNearestVisibleTarget(ABaseCharacter* Bot) const
@@ -114,18 +114,16 @@ AActor* UBTService_UpdateBotState::FindNearestVisibleTarget(ABaseCharacter* Bot)
 	for (AActor* A : AllChars)
 	{
 		if (!A || A == Bot) continue;
-
-		// Skip dead bots
+		
+		//Skips dead or respawning characters
 		ABaseCharacter* AsChar = Cast<ABaseCharacter>(A);
 		if (AsChar && AsChar->HealthComponent && AsChar->HealthComponent->IsDead()) continue;
-
+		
+		//Must face forward to the target
 		const float D = FVector::DistSquared(Bot->GetActorLocation(), A->GetActorLocation());
 		if (D >= BestDistSq) continue;
-		// Must be in front of the bot
-		const FVector Facing = Bot->GetActorForwardVector();
-		const FVector ToTarget = (A->GetActorLocation() - Bot->GetActorLocation()).GetSafeNormal();
-		if (FVector::DotProduct(Facing, ToTarget) < 0.5f) continue; // ~60° half-angle
-		// Must be visible
+		
+		//LOS of the target
 		if (!HasLineOfSight(Bot, A)) continue;
 
 		BestDistSq = D;
@@ -152,16 +150,12 @@ AActor* UBTService_UpdateBotState::FindNearestPickupByCategory(ABaseCharacter* B
 		APickupBase* Pickup = Cast<APickupBase>(A);
 		if (!Pickup || Pickup->Category != Category) continue;
 
-		// If it's a weapon, check if we actually want it
-		if (Category == EPickupCategory::Ammo)
+		// --- Ask the pickup if the bot is actually allowed to take it ---
+		if (A->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass()))
 		{
-			AWeaponPickup* WP = Cast<AWeaponPickup>(A);
-			if (WP && Bot->CombatComponent)
+			if (!IInteractableInterface::Execute_CanInteract(A, Bot))
 			{
-				if (!Bot->CombatComponent->WantsWeaponOrAmmoPickup(WP->WeaponClass))
-				{
-					continue; // Skip this pickup, we already have it and have enough ammo
-				}
+				continue; // Skip this pickup, we don't need it (e.g., ammo is full)
 			}
 		}
 
@@ -180,32 +174,33 @@ void UBTService_UpdateBotState::UpdateIntent(ABaseCharacter* Bot, UBlackboardCom
 	if (!Bot || !Bot->HealthComponent || !Bot->CombatComponent || !BB) return;
 
 	const float HP = Bot->HealthComponent->CurrentHealth;
-	AActor* Target   = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::TargetActor));
-	AActor* HealthP  = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::HealthPickup));
-	AActor* WeaponP  = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::AmmoPickup));
-	
+	AActor* Target  = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::TargetActor));
+	AActor* HealthP = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::HealthPickup));
+	AActor* WeaponP = Cast<AActor>(BB->GetValueAsObject(BotBBKeys::AmmoPickup));
+
 	EBotIntent Intent = EBotIntent::Patrol;
 
-	// Priority 1: Retreat if critically hurt
+	// Priority 1: Critically hurt (Flee or run to health)
 	if (HP < FleeHealthThreshold)
 	{
 		Intent = HealthP ? EBotIntent::SeekHealth : EBotIntent::Flee;
 	}
-	// Priority 2: If engaging a target, keep engaging "
+	// Priority 2: Engage if target is visible
 	else if (Target)
 	{
 		Intent = EBotIntent::Engage;
 	}
-	// Priority 3: No target, but we need a weapon or ammo → go get it
+	// Priority 3: We have no target, but we need ammo/weapon
 	else if (WeaponP)
 	{
 		Intent = EBotIntent::SeekAmmo;
 	}
-	// Priority 4: No target, but we're hurt → grab health
+	// Priority 4: Proactively seek health if no target
 	else if (HP < SeekHealthThreshold && HealthP)
 	{
 		Intent = EBotIntent::SeekHealth;
 	}
+
 	BB->SetValueAsEnum(BotBBKeys::CurrentIntent, static_cast<uint8>(Intent));
 	UE_LOG(LogTemp, Warning, TEXT("[AI] %s Intent=%d (0=Patrol 1=Engage 2=SeekHealth 3=SeekAmmo 4=Flee)"),
 	*Bot->GetName(), (int32)Intent);

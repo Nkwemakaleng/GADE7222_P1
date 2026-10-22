@@ -17,17 +17,42 @@ public:
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
-	UPROPERTY(EditAnywhere, Category = "Bot")
-	float MinFireDistance = 400.f;
+	// --- COMBAT DISTANCE ---
+	UPROPERTY(EditAnywhere, Category = "Bot|Combat")
+	float MinFireDistance = 300.f;
 
-	UPROPERTY(EditAnywhere, Category = "Bot")
+	UPROPERTY(EditAnywhere, Category = "Bot|Combat")
 	float MaxFireDistance = 1200.f;
 
-	UPROPERTY(EditAnywhere, Category = "Bot")
-	float MaxEngageDuration = 6.0f;
+	UPROPERTY(EditAnywhere, Category = "Bot|Combat")
+	float MaxEngageDuration = 8.0f;
+
+	// --- HUMAN FACTORS ---
+	UPROPERTY(EditAnywhere, Category = "Bot|Human")
+	float MinReactionTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Bot|Human")
+	float MaxReactionTime = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Bot|Human")
+	float AimErrorDegrees = 3.0f; // How much they can miss by
+
+	UPROPERTY(EditAnywhere, Category = "Bot|Human")
+	float JumpChancePerTick = 0.02f; // 2% chance to jump each tick
+
+	// --- MOVEMENT ---
+	UPROPERTY(EditAnywhere, Category = "Bot|Movement")
+	float StrafeChangeMinTime = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Bot|Movement")
+	float StrafeChangeMaxTime = 1.5f;
 
 private:
 	AActor* GetTarget(UBehaviorTreeComponent& OwnerComp) const;
 	float AccumulatedTime = 0.0f;
-	float StuckTime = 0.0f;
+	float CurrentReactionTime = 0.0f;
+	bool bIsReadyToFire = false;
+	
+	float StrafeTimer = 0.0f;
+	float StrafeDirection = 1.0f; // 1.0 = Right, -1.0 = Left
 };

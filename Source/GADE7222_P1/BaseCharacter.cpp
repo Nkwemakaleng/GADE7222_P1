@@ -241,6 +241,7 @@ void ABaseCharacter::ReceiveDamage_Implementation(float DamageAmount, AActor* Da
 	{
 		LastAttacker = DamageCauser;
 		LastAttackTime = GetWorld()->TimeSeconds;
+		UE_LOG(LogTemp, Warning, TEXT("%s was hit by %s. Retaliation locked."), *GetName(), *DamageCauser->GetName());
 	}
 
 	// --- Broadcast for listeners (HUD, quests, etc.) ---

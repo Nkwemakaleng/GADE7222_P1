@@ -24,4 +24,6 @@ public:
 
 protected:
 	virtual bool OnPickedUp_Implementation(AActor* Interactor) override;
+	
+	virtual bool CanBePickedUp_Implementation(AActor* Interactor) const override;
 };

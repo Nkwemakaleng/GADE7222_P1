@@ -59,12 +59,12 @@ public:
 	// Returns the index of the best weapon to use right now (highest CombatPriority with ammo).
 	// Returns INDEX_NONE if no viable weapon exists.
 	UFUNCTION(BlueprintPure, Category = "Combat")
-	int32 FindBestCombatWeaponIndex() const;
+	int32 FindBestCombatWeaponIndex(float DistanceToTarget = -1.0f) const;
 
 	// Switches to the best weapon if it's not already equipped.
 	// Returns true if a switch happened.
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	bool SwitchToBestCombatWeapon();
+	bool SwitchToBestCombatWeapon(float DistanceToTarget = -1.0f);
 
 	// Convenience: does the bot have any weapon at all?
 	UFUNCTION(BlueprintPure, Category = "Combat")
@@ -83,6 +83,8 @@ public:
 	//   - Any owned non-infinite weapon is empty
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	bool WantsWeaponOrAmmoPickup(TSubclassOf<class AWeaponBase> PickupClass) const;
+	
+	
 protected:
 	virtual void BeginPlay() override;
 

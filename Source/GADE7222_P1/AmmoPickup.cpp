@@ -22,3 +22,14 @@ bool AAmmoPickup::OnPickedUp_Implementation(AActor* Interactor)
 	Char->PickupWeapon(WeaponToPickup, AmmoAmount);
 	return true;
 }
+
+bool AAmmoPickup::CanBePickedUp_Implementation(AActor* Interactor) const
+{
+	if (!WeaponToPickup) return false;
+
+	ABaseCharacter* Char = Cast<ABaseCharacter>(Interactor);
+	if (!Char || !Char->CombatComponent) return false;
+
+	// If the bot already has max ammo for this gun, return false so it stops trying
+	return Char->CombatComponent->WantsWeaponOrAmmoPickup(WeaponToPickup);
+}
