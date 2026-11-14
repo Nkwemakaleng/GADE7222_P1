@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "MyGameState.h"
 #include "MyPlayerController.generated.h"
 
 UCLASS()
@@ -11,10 +12,24 @@ class GADE7222_P1_API AMyPlayerController : public APlayerController
 
 public:
 	AMyPlayerController();
+	
+	UFUNCTION(BlueprintCallable, Category = "Flow")
+	void SetGameFlowState(EGameFlowState NewState);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	
+	// Enhanced Input function
+	void TogglePauseMenu();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Flow")
+	EGameFlowState CurrentState = EGameFlowState::Playing;
+
+	// UI Classes
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UPauseMenuWidget> PauseMenuClass;
+	UPROPERTY() class UPauseMenuWidget* PauseMenuInstance;
 
 public:
 	// Input mapping context

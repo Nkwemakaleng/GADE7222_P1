@@ -4,8 +4,10 @@
 #include "StaminaComponent.h"
 #include "BaseCharacter.h"
 #include "InteractableInterface.h"
+#include "MatchGameMode.h"
 #include "Components/TextBlock.h"
 #include "StatBarBase.h"
+#include "Kismet/GameplayStatics.h"
 
 void UHUDWidget::NativeConstruct()
 {
@@ -119,5 +121,17 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	else
 	{
 		Text_InteractPrompt->SetVisibility(ESlateVisibility::Hidden);
+	}
+	
+	if (AMatchGameMode* GM = Cast<AMatchGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		int32 Seconds = GM->GetTimeRemaining();
+		int32 Mins = Seconds / 60;
+		int32 Secs = Seconds % 60;
+	
+		if (Text_MatchTimer)
+		{
+			Text_MatchTimer->SetText(FText::FromString(FString::Printf(TEXT("%02d:%02d"), Mins, Secs)));
+		}
 	}
 }

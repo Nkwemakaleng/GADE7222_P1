@@ -10,6 +10,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "EngineUtils.h"
+#include "GamePlayerState.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/WidgetComponent.h"
@@ -336,6 +337,17 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 	SetActorEnableCollision(false);
 	SetHealthBarVisible(false);
 
+	// Award kill to the attacker's PlayerState
+	if (Killer)
+	{
+		if (ABaseCharacter* KillerChar = Cast<ABaseCharacter>(Killer))
+		{
+			if (AGamePlayerState* PS = KillerChar->GetPlayerState<AGamePlayerState>())
+			{
+				PS->AddKill();
+			}
+		}
+	}
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
 		this, &ABaseCharacter::Respawn, RespawnDelay, false);
 }

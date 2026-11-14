@@ -37,6 +37,7 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Ammo;
 	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Health;
 	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Stamina;
+	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_MatchTimer;
 
 private:
 	// Delegate handlers — receive values, not the source object

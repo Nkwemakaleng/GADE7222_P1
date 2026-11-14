@@ -3,6 +3,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "PlayerCharacter.h"
 #include "Engine/LocalPlayer.h"
+#include "PauseMenuWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AMyPlayerController::AMyPlayerController()
@@ -28,6 +30,38 @@ void AMyPlayerController::BeginPlay()
 	}
 }
 
+void AMyPlayerController::SetGameFlowState(EGameFlowState NewState)
+{
+	CurrentState = NewState;
+
+	switch (CurrentState)
+	{
+	case EGameFlowState::Playing:
+		SetInputMode(FInputModeGameOnly());
+		bShowMouseCursor = false;
+		UGameplayStatics::SetGamePaused(GetWorld(), false);
+		if (PauseMenuInstance) PauseMenuInstance->RemoveFromParent();
+		break;
+
+	case EGameFlowState::Paused:
+		SetInputMode(FInputModeGameAndUI());
+		bShowMouseCursor = true;
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+		if (PauseMenuClass && !PauseMenuInstance)
+		{
+			PauseMenuInstance = CreateWidget<UPauseMenuWidget>(this, PauseMenuClass);
+			PauseMenuInstance->AddToViewport();
+		}
+		break;
+		
+	case EGameFlowState::MatchOver:
+	case EGameFlowState::TitleScreen:
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+		break;
+	}
+}
+
 void AMyPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -45,4 +79,12 @@ void AMyPlayerController::SetupInputComponent()
 		PlayerCharacter->FireAction = FireAction;
 		PlayerCharacter->SwitchWeaponAction = SwitchWeaponAction;
 	}*/
+}
+
+void AMyPlayerController::TogglePauseMenu()
+{
+	if (CurrentState == EGameFlowState::Playing)
+		SetGameFlowState(EGameFlowState::Paused);
+	else if (CurrentState == EGameFlowState::Paused)
+		SetGameFlowState(EGameFlowState::Playing);
 }
