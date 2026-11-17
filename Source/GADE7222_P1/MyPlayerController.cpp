@@ -30,6 +30,36 @@ void AMyPlayerController::BeginPlay()
 	}
 }
 
+void AMyPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		
+		if (PauseAction)
+		{
+			EnhancedInput->BindAction(PauseAction, ETriggerEvent::Started, this, &AMyPlayerController::TogglePauseMenu);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("MyPlayerController: PauseAction is null! Please assign it in the Blueprint."));
+		}
+	}
+}
+
+void AMyPlayerController::TogglePauseMenu()
+{
+	if (CurrentState == EGameFlowState::Playing)
+	{
+		SetGameFlowState(EGameFlowState::Paused);
+	}
+	else if (CurrentState == EGameFlowState::Paused)
+	{
+		SetGameFlowState(EGameFlowState::Playing);
+	}
+}
+
 void AMyPlayerController::SetGameFlowState(EGameFlowState NewState)
 {
 	CurrentState = NewState;
@@ -37,54 +67,43 @@ void AMyPlayerController::SetGameFlowState(EGameFlowState NewState)
 	switch (CurrentState)
 	{
 	case EGameFlowState::Playing:
-		SetInputMode(FInputModeGameOnly());
-		bShowMouseCursor = false;
+		// Hide menu and unpause
+		if (PauseMenuInstance)
+		{
+			PauseMenuInstance->RemoveFromParent();
+			PauseMenuInstance = nullptr;
+		}
 		UGameplayStatics::SetGamePaused(GetWorld(), false);
-		if (PauseMenuInstance) PauseMenuInstance->RemoveFromParent();
+		bShowMouseCursor = false;
+		SetInputMode(FInputModeGameOnly());
 		break;
 
 	case EGameFlowState::Paused:
-		SetInputMode(FInputModeGameAndUI());
-		bShowMouseCursor = true;
-		UGameplayStatics::SetGamePaused(GetWorld(), true);
-		if (PauseMenuClass && !PauseMenuInstance)
 		{
-			PauseMenuInstance = CreateWidget<UPauseMenuWidget>(this, PauseMenuClass);
-			PauseMenuInstance->AddToViewport();
-		}
-		break;
+			
+			// Show menu and pause
+			if (PauseMenuClass && !PauseMenuInstance)
+			{
+				PauseMenuInstance = CreateWidget<UPauseMenuWidget>(this, PauseMenuClass);
+				if (PauseMenuInstance)
+				{
+					PauseMenuInstance->AddToViewport();
+				}
+			}
+			UGameplayStatics::SetGamePaused(GetWorld(), true);
+			bShowMouseCursor = true;
 		
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			InputMode.SetHideCursorDuringCapture(false);
+			SetInputMode(InputMode);
+			break;
+		} 
+
 	case EGameFlowState::MatchOver:
 	case EGameFlowState::TitleScreen:
-		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
+		SetInputMode(FInputModeUIOnly());
 		break;
 	}
-}
-
-void AMyPlayerController::SetupInputComponent()
-{
-	Super::SetupInputComponent();
-
-	/*// Pass the Input Actions from the Controller to the Player Character
-	if (APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(GetPawn()))
-	{
-		PlayerCharacter->MoveForwardAction = MoveForwardAction;
-		PlayerCharacter->MoveRightAction = MoveRightAction;
-		PlayerCharacter->LookAction = LookAction;
-		PlayerCharacter->JumpAction = JumpAction;
-		PlayerCharacter->CrouchAction = CrouchAction;
-		
-		// Pass Combat Actions
-		PlayerCharacter->FireAction = FireAction;
-		PlayerCharacter->SwitchWeaponAction = SwitchWeaponAction;
-	}*/
-}
-
-void AMyPlayerController::TogglePauseMenu()
-{
-	if (CurrentState == EGameFlowState::Playing)
-		SetGameFlowState(EGameFlowState::Paused);
-	else if (CurrentState == EGameFlowState::Paused)
-		SetGameFlowState(EGameFlowState::Playing);
 }

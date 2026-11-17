@@ -218,6 +218,11 @@ FString UCombatComponent::GetCurrentWeaponName() const
 	return TEXT("None");
 }
 
+class AWeaponBase* UCombatComponent::GetCurrentWeapon() const
+{
+	return CurrentWeapon;
+}
+
 void UCombatComponent::DestroyAllWeapons()
 {
 	// Stop firing anything first

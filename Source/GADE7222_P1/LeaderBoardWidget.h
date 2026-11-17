@@ -3,9 +3,10 @@
 #include "CoreMinimal.h"
 #include "WidgetBase.h"
 #include "Blueprint/UserWidget.h"
-#include "LeaderBoardWidget.generated.h"
+#include "LeaderboardWidget.generated.h"
 
-class UListView;
+class UVerticalBox;
+class ULeaderboardRowWidget;
 
 UCLASS()
 class GADE7222_P1_API ULeaderboardWidget : public UWidgetBase
@@ -13,12 +14,16 @@ class GADE7222_P1_API ULeaderboardWidget : public UWidgetBase
 	GENERATED_BODY()
 
 public:
-	// Call this to populate the board
+	// Call this to refresh the board with the latest data
 	UFUNCTION(BlueprintCallable, Category = "UI")
-	void PopulateBoard();
+	void UpdateLeaderboard();
 
 protected:
-	// UListView in UMG (you must add this in the Blueprint designer and name it exactly PlayerListView)
-	UPROPERTY(meta = (BindWidgetOptional))
-	class UListView* PlayerListView;
+	// Bind the VerticalBox from UMG
+	UPROPERTY(meta = (BindWidget))
+	UVerticalBox* RowContainer;
+
+	// Assign the WBP_LeaderboardRow class here (Edit Defaults in the Blueprint)
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<ULeaderboardRowWidget> RowWidgetClass;
 };

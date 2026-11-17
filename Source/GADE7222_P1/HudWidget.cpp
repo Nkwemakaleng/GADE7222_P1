@@ -8,6 +8,8 @@
 #include "Components/TextBlock.h"
 #include "StatBarBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/VerticalBox.h"
+#include "TimerManager.h"
 
 void UHUDWidget::NativeConstruct()
 {
@@ -18,10 +20,21 @@ void UHUDWidget::NativeConstruct()
 	if (StatBar_Stamina) StatBar_Stamina->SetBarColor(FLinearColor(0.1f, 0.85f, 0.4f, 1.0f));
 
 	if (Text_InteractPrompt) Text_InteractPrompt->SetVisibility(ESlateVisibility::Hidden);
+	
+	// Bind to the GameState event
+    	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+    	{
+    		GS->OnKillFeedEvent.AddDynamic(this, &UHUDWidget::AddKillFeedEntry);
+    	}
 }
 
 void UHUDWidget::NativeDestruct()
 {
+	// Unbind to prevent crashes
+	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+	{
+		GS->OnKillFeedEvent.RemoveDynamic(this, &UHUDWidget::AddKillFeedEntry);
+	}
 	UnbindFromCharacter();
 	Super::NativeDestruct();
 }
@@ -133,5 +146,40 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		{
 			Text_MatchTimer->SetText(FText::FromString(FString::Printf(TEXT("%02d:%02d"), Mins, Secs)));
 		}
+	}
+}
+
+void UHUDWidget::AddKillFeedEntry(const FString& KillerName, const FString& VictimName, const FString& WeaponName)
+{
+	if (!KillFeedBox) return;
+
+	// 1. Create a new text block dynamically
+	UTextBlock* NewEntry = NewObject<UTextBlock>(this);
+	
+	// 2. Format the text (e.g., "Killer [Weapon] Victim")
+	FString FeedText = FString::Printf(TEXT("%s  [%s]  %s"), *KillerName, *WeaponName, *VictimName);
+	NewEntry->SetText(FText::FromString(FeedText));
+
+	// 3. Optional Styling
+	NewEntry->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+	NewEntry->SetShadowOffset(FVector2D(1.f, 1.f));
+	NewEntry->SetShadowColorAndOpacity(FLinearColor::Black);
+	NewEntry->SetJustification(ETextJustify::Right);
+
+	// 4. Add to the UI
+	KillFeedBox->AddChildToVerticalBox(NewEntry);
+
+	// 5. Remove it after 5 seconds to keep the feed clean
+	FTimerHandle TimerHandle;
+	FTimerDelegate TimerDel;
+	TimerDel.BindUFunction(this, FName("RemoveKillFeedEntry"), NewEntry);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDel, 5.0f, false);
+}
+
+void UHUDWidget::RemoveKillFeedEntry(UTextBlock* EntryWidget)
+{
+	if (EntryWidget && KillFeedBox)
+	{
+		KillFeedBox->RemoveChild(EntryWidget);
 	}
 }

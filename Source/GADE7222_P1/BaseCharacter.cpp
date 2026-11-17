@@ -15,11 +15,21 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/WidgetComponent.h"
 #include "HealthBarWidget.h"
+#include "MyGameState.h"
+#include "CombatComponent.h"
+#include "WeaponBase.h"
+#include "WeaponDataAsset.h"
+#include "GameFramework/PlayerState.h"
 
 ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	if (APlayerState* PS = GetPlayerState())
+	{
+		PS->SetPlayerName(CharacterDisplayName);
+	}
+	
 	// Set up Components
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
@@ -348,6 +358,43 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 			}
 		}
 	}
+	if (AGamePlayerState* MyPS = GetPlayerState<AGamePlayerState>())
+	{
+		MyPS->AddDeath();
+	}
+	FString KillerName = TEXT("Environment");
+	FString VictimName = CharacterDisplayName; // <--- Changed from GetName()
+	FString WeaponName = TEXT("World");
+
+	if (Killer && Killer != this)
+	{
+		if (ABaseCharacter* KillerChar = Cast<ABaseCharacter>(Killer))
+		{
+			KillerName = KillerChar->CharacterDisplayName; // <--- Changed from GetName()
+			
+			// Get the weapon the killer was holding
+			if (KillerChar->CombatComponent && KillerChar->CombatComponent->GetCurrentWeapon())
+			{
+				UWeaponDataAsset* Data = KillerChar->CombatComponent->GetCurrentWeapon()->GetWeaponData();
+				if (Data)
+				{
+					WeaponName = Data->WeaponName;
+				}
+			}
+		}
+	}
+
+	// Broadcast to the GameState
+	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+	{
+		GS->BroadcastKill(KillerName, VictimName, WeaponName);
+	}
+
+	// Broadcast to the GameState
+	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+	{
+		GS->BroadcastKill(KillerName, VictimName, WeaponName);
+	}
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
 		this, &ABaseCharacter::Respawn, RespawnDelay, false);
 }
@@ -466,5 +513,16 @@ void ABaseCharacter::SetHealthBarVisible(bool bVisible)
 	if (HealthBarWidgetComponent)
 	{
 		HealthBarWidgetComponent->SetVisibility(bVisible);
+	}
+}
+void ABaseCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// Once the controller possesses us, we should have a PlayerState
+	if (APlayerState* PS = GetPlayerState())
+	{
+		PS->SetPlayerName(CharacterDisplayName);
+		UE_LOG(LogTemp, Warning, TEXT("Character %s set PlayerState name to: %s"), *GetName(), *CharacterDisplayName);
 	}
 }

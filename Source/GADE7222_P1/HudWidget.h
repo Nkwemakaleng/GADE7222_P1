@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "WidgetBase.h"
+#include "Components/VerticalBox.h"
+#include "MyGameState.h"
 #include "HUDWidget.generated.h"
 
 class UTextBlock;
@@ -24,6 +26,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void UnbindFromCharacter();
 
+	// Helper to remove the entry after a few seconds
+	UFUNCTION()
+	void RemoveKillFeedEntry(UTextBlock* EntryWidget);
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
@@ -38,6 +43,7 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Health;
 	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Stamina;
 	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_MatchTimer;
+	UPROPERTY(meta = (BindWidgetOptional)) UVerticalBox* KillFeedBox;
 
 private:
 	// Delegate handlers — receive values, not the source object
@@ -45,7 +51,7 @@ private:
 	UFUNCTION() void HandleWeaponChanged(const FString& WeaponName);
 	UFUNCTION() void HandleHealthChanged(float Current, float Max);
 	UFUNCTION() void HandleStaminaChanged(float Current, float Max);
-
+	UFUNCTION() void AddKillFeedEntry(const FString& KillerName, const FString& VictimName, const FString& WeaponName);
 	// Weak refs so we don't prevent GC
 	UPROPERTY() TWeakObjectPtr<UCombatComponent> CachedCombat;
 	UPROPERTY() TWeakObjectPtr<UHealthComponent> CachedHealth;

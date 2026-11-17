@@ -1,28 +1,59 @@
-#include "LeaderBoardWidget.h"
-#include "MatchDataSubsystem.h"
-#include "Components/ListView.h"
-#include "Engine/GameInstance.h"
-#include "Kismet/GameplayStatics.h"
+#include "LeaderboardWidget.h"
+#include "LeaderboardRowWidget.h"
+#include "GamePlayerState.h" 
+#include "Components/VerticalBox.h"
+#include "GameFramework/GameStateBase.h"
 
-void ULeaderboardWidget::PopulateBoard()
+void ULeaderboardWidget::UpdateLeaderboard()
 {
-	// 1. Get the MatchDataSubsystem
-	UGameInstance* GI = GetGameInstance();
-	if (!GI) return;
-
-	UMatchDataSubsystem* MatchSubsystem = GI->GetSubsystem<UMatchDataSubsystem>();
-	if (!MatchSubsystem) return;
-
-	// 2. If you are using a UListView in your Blueprint, clear the old items and add the new ones.
-	// NOTE: You will need to create a custom UObject wrapper class for the ListView items in a real setup. 
-	// For now, this function acts as the logic hub. You can bind this to a Blueprint node and manually spawn text blocks.
-	
-	// (If using a VerticalBox instead of ListView, you would clear children and create text blocks here)
-	
-	// Example of how you would log the data to verify it works:
-	UE_LOG(LogTemp, Warning, TEXT("--- LEADERBOARD ---"));
-	for (const FMatchResult& Result : MatchSubsystem->LastMatchResults)
+	if (!RowContainer || !RowWidgetClass) 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: %d Kills"), *Result.PlayerName, Result.Kills);
+		UE_LOG(LogTemp, Error, TEXT("LeaderboardWidget: RowContainer or RowWidgetClass is null!"));
+		return;
 	}
+
+	// 1. Clear existing rows
+	RowContainer->ClearChildren();
+
+	// 2. Get the GameState
+	AGameStateBase* GS = GetWorld()->GetGameState();
+	if (!GS) return;
+
+	// 3. Gather PlayerStates
+	TArray<AGamePlayerState*> PlayerStates;
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		AGamePlayerState* MyPS = Cast<AGamePlayerState>(PS);
+		if (MyPS)
+		{
+			PlayerStates.Add(MyPS);
+		}
+	}
+
+	// 4. Sort by Kills (Descending), then Deaths (Ascending)
+	PlayerStates.Sort([](const AGamePlayerState& A, const AGamePlayerState& B) {
+		if (A.Kills == B.Kills)
+		{
+			return A.Deaths < B.Deaths;
+		}
+		return A.Kills > B.Kills;
+	});
+
+	// 5. Spawn Rows
+	int32 Position = 1;
+	for (AGamePlayerState* PS : PlayerStates)
+	{
+		ULeaderboardRowWidget* NewRow = CreateWidget<ULeaderboardRowWidget>(this, RowWidgetClass);
+		if (NewRow)
+		{
+			// Check if this PlayerState belongs to the local player
+			bool bIsLocal = (PS->GetPlayerController() != nullptr && PS->GetPlayerController()->IsLocalController());
+
+			NewRow->SetRowData(Position, PS->GetPlayerName(), PS->Kills, PS->Deaths, bIsLocal);
+			RowContainer->AddChildToVerticalBox(NewRow);
+			Position++;
+		}
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Leaderboard Updated with %d players."), PlayerStates.Num());
 }

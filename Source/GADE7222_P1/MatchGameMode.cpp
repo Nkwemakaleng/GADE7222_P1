@@ -1,6 +1,7 @@
 #include "MatchGameMode.h"
 #include "GamePlayerState.h"
 #include "MatchDataSubsystem.h"
+#include "MyGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
@@ -9,6 +10,7 @@
 AMatchGameMode::AMatchGameMode()
 {
 	PlayerStateClass = AGamePlayerState::StaticClass();
+	GameStateClass = AMyGameState::StaticClass();
 	TimeRemaining = MatchDuration;
 }
 
@@ -46,22 +48,23 @@ void AMatchGameMode::EndMatch()
 			if (MyPS)
 			{
 				FMatchResult Result;
-				Result.PlayerName = MyPS->GetPlayerName();
+				Result.PlayerName = MyPS->GetPlayerName(); // This now uses our DisplayName
 				Result.Kills = MyPS->Kills;
-				
-				// --- FIX: Check for Local Player correctly ---
-				APlayerController* PC = MyPS->GetPlayerController();
-				Result.bIsLocalPlayer = (PC != nullptr && PC->IsLocalController());
-				
+				Result.Deaths = MyPS->Deaths;
+				Result.bIsLocalPlayer = (MyPS->GetPlayerController() != nullptr && MyPS->GetPlayerController()->IsLocalController());
 				Results.Add(Result);
 			}
 		}
 	}
 
-	// Sort by kills (Descending)
 	Results.Sort([](const FMatchResult& A, const FMatchResult& B) {
-		return A.Kills > B.Kills;
+		if (A.Kills == B.Kills)
+		{
+			return A.Deaths < B.Deaths; // Tie-breaker: fewer deaths is better
+		}
+		return A.Kills > B.Kills; // Most kills is better
 	});
+	
 
 	if (UGameInstance* GI = GetGameInstance())
 	{

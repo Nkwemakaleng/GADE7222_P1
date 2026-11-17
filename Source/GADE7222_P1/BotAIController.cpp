@@ -6,6 +6,7 @@
 ABotAIController::ABotAIController()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	bWantsPlayerState = true; 
 }
 
 void ABotAIController::OnPossess(APawn* InPawn)

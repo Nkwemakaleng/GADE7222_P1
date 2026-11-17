@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "WidgetBase.h"
-#include "WidgetBase.h"
+#include "Blueprint/UserWidget.h"
 #include "PauseMenuWidget.generated.h"
 
 class UButton;
@@ -16,25 +16,21 @@ class GADE7222_P1_API UPauseMenuWidget : public UWidgetBase
 protected:
 	virtual void NativeConstruct() override;
 
-	// Bind these in the UMG Designer (names must match exactly)
-	UPROPERTY(meta = (BindWidgetOptional))
-	class ULeaderboardWidget* Leaderboard;
+	// Bind buttons from UMG
+	UPROPERTY(meta = (BindWidget))
+	UButton* Btn_Resume;
 
-	UPROPERTY(meta = (BindWidgetOptional))
-	class UButton* Btn_Resume;
+	UPROPERTY(meta = (BindWidget))
+	UButton* Btn_Restart;
 
-	UPROPERTY(meta = (BindWidgetOptional))
-	class UButton* Btn_Restart;
+	UPROPERTY(meta = (BindWidget))
+	UButton* Btn_QuitToTitle;
 
-	UPROPERTY(meta = (BindWidgetOptional))
-	class UButton* Btn_QuitToTitle;
+	// Bind the Leaderboard widget from UMG
+	UPROPERTY(meta = (BindWidget))
+	ULeaderboardWidget* Leaderboard;
 
-	UFUNCTION()
-	void OnResumeClicked();
-
-	UFUNCTION()
-	void OnRestartClicked();
-
-	UFUNCTION()
-	void OnQuitClicked();
+	UFUNCTION() void OnResumeClicked();
+	UFUNCTION() void OnRestartClicked();
+	UFUNCTION() void OnQuitClicked();
 };

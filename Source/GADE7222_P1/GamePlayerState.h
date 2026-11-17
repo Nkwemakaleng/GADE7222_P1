@@ -18,4 +18,13 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Match")
 	void ResetKills() { Kills = 0; }
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Match")
+	int32 Deaths = 0;
+
+	UFUNCTION(BlueprintCallable, Category = "Match")
+	void AddDeath() { Deaths++; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Match")
+	void ResetDeaths() { Deaths = 0; }
 };

@@ -4,12 +4,16 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "GamePlayerState.h"
+#include "GameFramework/Character.h"
 
 AEnemyCharacter::AEnemyCharacter()
 {
 	// AI does not need a camera or spring arm — leave them, they don't hurt
 	AIControllerClass = ABotAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	
+	CharacterDisplayName = TEXT("Bot");
 }
 
 void AEnemyCharacter::BeginPlay()

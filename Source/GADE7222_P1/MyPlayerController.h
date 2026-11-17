@@ -35,6 +35,10 @@ public:
 	// Input mapping context
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* InputMappingContext;
+	
+	//Pause Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* PauseAction;
 
 	// Input actions 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")

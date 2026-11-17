@@ -10,10 +10,10 @@ struct FMatchResult
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly) FString PlayerName;
-	UPROPERTY(BlueprintReadOnly) int32 Kills;
-	UPROPERTY(BlueprintReadOnly) bool bIsLocalPlayer;
+	UPROPERTY(BlueprintReadOnly) int32 Kills = 0;
+	UPROPERTY(BlueprintReadOnly) int32 Deaths = 0;
+	UPROPERTY(BlueprintReadOnly) bool bIsLocalPlayer = false;
 };
-
 UCLASS()
 class GADE7222_P1_API UMatchDataSubsystem : public UGameInstanceSubsystem
 {

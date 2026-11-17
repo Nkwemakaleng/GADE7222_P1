@@ -22,7 +22,10 @@ class GADE7222_P1_API ABaseCharacter : public ACharacter, public IDamageableInte
 
 public:
 	ABaseCharacter();
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
+	FString CharacterDisplayName = TEXT("Player");
+	
 	// --- COMPONENTS ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UCombatComponent* CombatComponent;
@@ -196,4 +199,6 @@ protected:
 	//-------Retaliation-------
 	TWeakObjectPtr<AActor> LastAttacker;
     float LastAttackTime = -1000.f;
+	
+	virtual void PossessedBy(AController* NewController) override;
 };

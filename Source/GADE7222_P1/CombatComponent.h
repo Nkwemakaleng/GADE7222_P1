@@ -43,7 +43,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	FString GetCurrentWeaponName() const;
-
+	
+	UFUNCTION(BlueprintPure, Category = "Combat")
+    class AWeaponBase* GetCurrentWeapon() const;
+	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void InitializeWithWeapons(const TArray<TSubclassOf<class AWeaponBase>>& Weapons);
 
