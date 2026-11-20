@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
 #include "GameFramework/GameStateBase.h" 
+#include "MatchOverWidget.h"
+#include "Blueprint/UserWidget.h"
 
 AMatchGameMode::AMatchGameMode()
 {
@@ -74,6 +76,27 @@ void AMatchGameMode::EndMatch()
 		}
 	}
 
+	// Pause the game
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
-	// Trigger Blueprint event or show UI here
+
+	// Spawn the Match Over UI
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		// Create the widget (you must create WBP_MatchOver and assign its class)
+		TSubclassOf<UMatchOverWidget> MatchOverClass = LoadClass<UMatchOverWidget>(nullptr, TEXT("/Game/UI/WBP_MatchOver.WBP_MatchOver_C"));
+		
+		if (MatchOverClass)
+		{
+			UMatchOverWidget* MatchOverWidget = CreateWidget<UMatchOverWidget>(PC, MatchOverClass);
+			if (MatchOverWidget)
+			{
+				MatchOverWidget->AddToViewport();
+				
+				// Enable mouse cursor for UI interaction
+				PC->bShowMouseCursor = true;
+				FInputModeUIOnly InputMode;
+				PC->SetInputMode(InputMode);
+			}
+		}
+	}
 }

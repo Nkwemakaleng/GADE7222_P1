@@ -17,13 +17,14 @@ void UPauseMenuWidget::NativeConstruct()
 
 	// Populate the leaderboard immediately when the pause menu opens
 	if (Leaderboard)
-	{
-		Leaderboard->UpdateLeaderboard();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("PauseMenuWidget: Leaderboard is null! Check BindWidget name."));
-	}
+    	{
+    		UE_LOG(LogTemp, Warning, TEXT("PauseMenu: Leaderboard found. Calling UpdateLeaderboard."));
+    		Leaderboard->UpdateLeaderboard();
+    	}
+    	else
+    	{
+    		UE_LOG(LogTemp, Error, TEXT("PauseMenu: Leaderboard is NULL. Check the widget name in UMG."));
+    	}
 }
 
 void UPauseMenuWidget::OnResumeClicked()

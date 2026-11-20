@@ -188,6 +188,8 @@ protected:
 	UFUNCTION()
 	void HandleDeath(AActor* Killer);
 
+	bool bIsDead = false;
+	
 	FTimerHandle RespawnTimerHandle;
 	
 	void EndDash();

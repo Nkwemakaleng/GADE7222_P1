@@ -4,6 +4,7 @@
 #include "WidgetBase.h"
 #include "Components/VerticalBox.h"
 #include "MyGameState.h"
+#include "Engine/Font.h"
 #include "HUDWidget.generated.h"
 
 class UTextBlock;
@@ -29,6 +30,13 @@ public:
 	// Helper to remove the entry after a few seconds
 	UFUNCTION()
 	void RemoveKillFeedEntry(UTextBlock* EntryWidget);
+	
+	//Font Editor
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+    class UFont* KillFeedFont;
+    
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    float KillFeedFontSize = 16.0f;
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;

@@ -324,8 +324,9 @@ void ABaseCharacter::StopCrouch() { UnCrouch(); }
 // ---------------- RESPAWN ----------------
 void ABaseCharacter::HandleDeath(AActor* Killer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%s died (killed by %s)"),
-		*GetName(), Killer ? *Killer->GetName() : TEXT("world"));
+	if (bIsDead) return;
+	bIsDead = true;
+	UE_LOG(LogTemp, Warning, TEXT("Character %s HandleDeath triggered."), *GetName());
 
 	// Disable input, hide, stop movement
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -389,12 +390,7 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 	{
 		GS->BroadcastKill(KillerName, VictimName, WeaponName);
 	}
-
-	// Broadcast to the GameState
-	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
-	{
-		GS->BroadcastKill(KillerName, VictimName, WeaponName);
-	}
+	
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,
 		this, &ABaseCharacter::Respawn, RespawnDelay, false);
 }
@@ -424,6 +420,7 @@ void ABaseCharacter::Respawn()
 		EnableInput(PC);
 	}
 	SetHealthBarVisible(true);
+	bIsDead = false; 
 }
 
 AActor* ABaseCharacter::FindRandomRespawnPoint() const

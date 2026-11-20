@@ -22,10 +22,10 @@ void UHUDWidget::NativeConstruct()
 	if (Text_InteractPrompt) Text_InteractPrompt->SetVisibility(ESlateVisibility::Hidden);
 	
 	// Bind to the GameState event
-    	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
-    	{
-    		GS->OnKillFeedEvent.AddDynamic(this, &UHUDWidget::AddKillFeedEntry);
-    	}
+	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+	{
+		GS->OnKillFeedEvent.AddUniqueDynamic(this, &UHUDWidget::AddKillFeedEntry);
+	}
 }
 
 void UHUDWidget::NativeDestruct()
@@ -153,6 +153,7 @@ void UHUDWidget::AddKillFeedEntry(const FString& KillerName, const FString& Vict
 {
 	if (!KillFeedBox) return;
 
+	UE_LOG(LogTemp, Warning, TEXT("UI RECEIVED KILL: %s killed %s"), *KillerName, *VictimName);
 	// 1. Create a new text block dynamically
 	UTextBlock* NewEntry = NewObject<UTextBlock>(this);
 	
@@ -161,7 +162,13 @@ void UHUDWidget::AddKillFeedEntry(const FString& KillerName, const FString& Vict
 	NewEntry->SetText(FText::FromString(FeedText));
 
 	// 3. Optional Styling
-	NewEntry->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+	// --- APPLY FONT ---
+	if (KillFeedFont)
+	{
+		FSlateFontInfo FontInfo(KillFeedFont, KillFeedFontSize);
+		NewEntry->SetFont(FontInfo);
+	}
+	NewEntry->SetColorAndOpacity(FSlateColor(FLinearColor::Black));
 	NewEntry->SetShadowOffset(FVector2D(1.f, 1.f));
 	NewEntry->SetShadowColorAndOpacity(FLinearColor::Black);
 	NewEntry->SetJustification(ETextJustify::Right);

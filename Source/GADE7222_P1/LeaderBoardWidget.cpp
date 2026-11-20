@@ -6,9 +6,16 @@
 
 void ULeaderboardWidget::UpdateLeaderboard()
 {
-	if (!RowContainer || !RowWidgetClass) 
+	
+	if (!RowContainer) 
 	{
-		UE_LOG(LogTemp, Error, TEXT("LeaderboardWidget: RowContainer or RowWidgetClass is null!"));
+		UE_LOG(LogTemp, Error, TEXT("Leaderboard: RowContainer is NULL. Check BindWidget name in UMG."));
+		return;
+	}
+	
+	if (!RowWidgetClass) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("Leaderboard: RowWidgetClass is NULL. Assign WBP_LeaderboardRow in Class Defaults."));
 		return;
 	}
 
