@@ -4,6 +4,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "MatchGameMode.generated.h"
 
+class UMatchOverWidget; 
+
 UCLASS()
 class GADE7222_P1_API AMatchGameMode : public AGameModeBase
 {
@@ -12,17 +14,24 @@ class GADE7222_P1_API AMatchGameMode : public AGameModeBase
 public:
 	AMatchGameMode();
 
+	
+	UFUNCTION(BlueprintCallable, Category = "Match")
+	void EndMatch();
+
 protected:
 	virtual void BeginPlay() override;
 	void UpdateTimer();
-	void EndMatch();
 
 	FTimerHandle MatchTimerHandle;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Match")
-	float MatchDuration = 300.0f; // 5 minutes in seconds
+	float MatchDuration = 300.0f;
 
 	int32 TimeRemaining;
+
+	
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UMatchOverWidget> MatchOverWidgetClass;
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Match")

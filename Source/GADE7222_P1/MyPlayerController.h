@@ -5,6 +5,11 @@
 #include "MyGameState.h"
 #include "MyPlayerController.generated.h"
 
+class UPauseMenuWidget;
+class UMainMenuWidget;
+class UInputMappingContext;
+class UInputAction;
+
 UCLASS()
 class GADE7222_P1_API AMyPlayerController : public APlayerController
 {
@@ -30,8 +35,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UPauseMenuWidget> PauseMenuClass;
 	UPROPERTY() class UPauseMenuWidget* PauseMenuInstance;
-
+	
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UMainMenuWidget> MainMenuClass;
+	UPROPERTY() UMainMenuWidget* MainMenuInstance;
+	
+	void DebugEndMatch();
 public:
+	//Debug Keys
+	UPROPERTY(editAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* EndMatchAction;
+	
 	// Input mapping context
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* InputMappingContext;

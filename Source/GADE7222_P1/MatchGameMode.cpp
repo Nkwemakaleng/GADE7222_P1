@@ -1,18 +1,15 @@
 #include "MatchGameMode.h"
 #include "GamePlayerState.h"
 #include "MatchDataSubsystem.h"
-#include "MyGameState.h"
+#include "MatchOverWidget.h" // Include the widget
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
-#include "GameFramework/GameStateBase.h" 
-#include "MatchOverWidget.h"
-#include "Blueprint/UserWidget.h"
+#include "GameFramework/GameStateBase.h"
 
 AMatchGameMode::AMatchGameMode()
 {
 	PlayerStateClass = AGamePlayerState::StaticClass();
-	GameStateClass = AMyGameState::StaticClass();
 	TimeRemaining = MatchDuration;
 }
 
@@ -39,9 +36,11 @@ void AMatchGameMode::UpdateTimer()
 
 void AMatchGameMode::EndMatch()
 {
+	//Prevents EndMatch from being called twice
+	if (UGameplayStatics::IsGamePaused(GetWorld())) return;
+	// 1. Gather all player states and save to subsystem (for the leaderboard)
 	TArray<FMatchResult> Results;
 	
-	// Safety check to ensure GameState exists
 	if (GameState)
 	{
 		for (APlayerState* PS : GameState->PlayerArray)
@@ -50,23 +49,22 @@ void AMatchGameMode::EndMatch()
 			if (MyPS)
 			{
 				FMatchResult Result;
-				Result.PlayerName = MyPS->GetPlayerName(); // This now uses our DisplayName
+				Result.PlayerName = MyPS->GetPlayerName();
 				Result.Kills = MyPS->Kills;
 				Result.Deaths = MyPS->Deaths;
-				Result.bIsLocalPlayer = (MyPS->GetPlayerController() != nullptr && MyPS->GetPlayerController()->IsLocalController());
+				
+				APlayerController* PC = MyPS->GetPlayerController();
+				Result.bIsLocalPlayer = (PC != nullptr && PC->IsLocalController());
+				
 				Results.Add(Result);
 			}
 		}
 	}
 
 	Results.Sort([](const FMatchResult& A, const FMatchResult& B) {
-		if (A.Kills == B.Kills)
-		{
-			return A.Deaths < B.Deaths; // Tie-breaker: fewer deaths is better
-		}
-		return A.Kills > B.Kills; // Most kills is better
+		if (A.Kills == B.Kills) return A.Deaths < B.Deaths;
+		return A.Kills > B.Kills;
 	});
-	
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
@@ -76,27 +74,29 @@ void AMatchGameMode::EndMatch()
 		}
 	}
 
-	// Pause the game
+	// 2. Pause the game
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
 
-	// Spawn the Match Over UI
+	// 3. Spawn the Match Over UI
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 	{
-		// Create the widget (you must create WBP_MatchOver and assign its class)
-		TSubclassOf<UMatchOverWidget> MatchOverClass = LoadClass<UMatchOverWidget>(nullptr, TEXT("/Game/UI/WBP_MatchOver.WBP_MatchOver_C"));
-		
-		if (MatchOverClass)
+		if (MatchOverWidgetClass)
 		{
-			UMatchOverWidget* MatchOverWidget = CreateWidget<UMatchOverWidget>(PC, MatchOverClass);
+			UMatchOverWidget* MatchOverWidget = CreateWidget<UMatchOverWidget>(PC, MatchOverWidgetClass);
 			if (MatchOverWidget)
 			{
 				MatchOverWidget->AddToViewport();
 				
-				// Enable mouse cursor for UI interaction
+				// Enable mouse cursor so the player can click buttons
 				PC->bShowMouseCursor = true;
 				FInputModeUIOnly InputMode;
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 				PC->SetInputMode(InputMode);
 			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("MatchGameMode: MatchOverWidgetClass is NULL! Assign it in BP_MatchGameMode."));
 		}
 	}
 }

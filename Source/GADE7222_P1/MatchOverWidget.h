@@ -7,6 +7,7 @@
 
 class UButton;
 class UTextBlock;
+class ULeaderboardWidget;
 
 UCLASS()
 class GADE7222_P1_API UMatchOverWidget : public UWidgetBase
@@ -19,6 +20,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* Text_MatchOver;
 
+	UPROPERTY(meta = (BindWidget))
+	ULeaderboardWidget* Leaderboard;
+	
 	UPROPERTY(meta = (BindWidget))
 	UButton* Btn_Restart;
 

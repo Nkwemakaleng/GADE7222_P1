@@ -4,7 +4,9 @@
 #include "PlayerCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "PauseMenuWidget.h"
+#include "MainMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "MatchGameMode.h"
 
 
 AMyPlayerController::AMyPlayerController()
@@ -28,7 +30,31 @@ void AMyPlayerController::BeginPlay()
 			UE_LOG(LogTemp, Error, TEXT("MyPlayerController: InputMappingContext is null! Please assign it in the Blueprint."));
 		}
 	}
+	
+	//Checks if we are in the Main Menu
+	FString CurrentMapName = GetWorld()->GetMapName();
+	CurrentMapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+	if (CurrentMapName.Contains(TEXT("MainMenuMap"))) // Make sure your level is named MainMenuMap
+	{
+		// Spawn the Main Menu
+		if (MainMenuClass)
+		{
+			MainMenuInstance = CreateWidget<UMainMenuWidget>(this, MainMenuClass);
+			if (MainMenuInstance)
+			{
+				MainMenuInstance->AddToViewport();
+				SetGameFlowState(EGameFlowState::TitleScreen);
+			}
+		}
+	}
+	else
+	{
+		// We are in a gameplay map
+		SetGameFlowState(EGameFlowState::Playing);
+	}
 }
+
 
 void AMyPlayerController::SetupInputComponent()
 {
@@ -45,7 +71,17 @@ void AMyPlayerController::SetupInputComponent()
 		{
 			UE_LOG(LogTemp, Error, TEXT("MyPlayerController: PauseAction is null! Please assign it in the Blueprint."));
 		}
+		if (EndMatchAction)
+		{
+			EnhancedInput->BindAction(EndMatchAction, ETriggerEvent::Started,this, &AMyPlayerController::DebugEndMatch);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("MyPlayerController: EnMatchAction is null! Please assign it in the Blueprint."));
+		}
+			
 	}
+	
 }
 
 void AMyPlayerController::TogglePauseMenu()
@@ -57,6 +93,14 @@ void AMyPlayerController::TogglePauseMenu()
 	else if (CurrentState == EGameFlowState::Paused)
 	{
 		SetGameFlowState(EGameFlowState::Playing);
+	}
+}
+void AMyPlayerController::DebugEndMatch()
+{
+	// Find the GameMode and call EndMatch
+	if (AMatchGameMode* GM = Cast<AMatchGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
+		GM->EndMatch();
 	}
 }
 
