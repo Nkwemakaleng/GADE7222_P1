@@ -42,6 +42,7 @@ protected:
 	virtual void NativeDestruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
+	bool bIsKillFeedBound = false; 
 	// --- Widget bindings ---
 	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_WeaponName;
 	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_CurrentAmmo;
@@ -52,7 +53,7 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional)) UStatBarBase* StatBar_Stamina;
 	UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Text_MatchTimer;
 	UPROPERTY(meta = (BindWidgetOptional)) UVerticalBox* KillFeedBox;
-
+	
 private:
 	// Delegate handlers — receive values, not the source object
 	UFUNCTION() void HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);

@@ -389,6 +389,7 @@ void ABaseCharacter::HandleDeath(AActor* Killer)
 	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
 	{
 		GS->BroadcastKill(KillerName, VictimName, WeaponName);
+		UE_LOG(LogTemp, Warning, TEXT("Broadcasting Kill to GameState!"));
 	}
 	
 	GetWorldTimerManager().SetTimer(RespawnTimerHandle,

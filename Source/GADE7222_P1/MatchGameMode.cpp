@@ -1,7 +1,8 @@
 #include "MatchGameMode.h"
 #include "GamePlayerState.h"
 #include "MatchDataSubsystem.h"
-#include "MatchOverWidget.h" // Include the widget
+#include "MatchOverWidget.h" 
+#include "MyPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
@@ -53,7 +54,7 @@ void AMatchGameMode::EndMatch()
 				Result.Kills = MyPS->Kills;
 				Result.Deaths = MyPS->Deaths;
 				
-				APlayerController* PC = MyPS->GetPlayerController();
+				AMyPlayerController* PC = Cast<AMyPlayerController>(MyPS->GetPlayerController());
 				Result.bIsLocalPlayer = (PC != nullptr && PC->IsLocalController());
 				
 				Results.Add(Result);
@@ -78,7 +79,7 @@ void AMatchGameMode::EndMatch()
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
 
 	// 3. Spawn the Match Over UI
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+	if (AMyPlayerController* PC = Cast<AMyPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
 	{
 		if (MatchOverWidgetClass)
 		{
@@ -87,7 +88,7 @@ void AMatchGameMode::EndMatch()
 			{
 				MatchOverWidget->AddToViewport();
 				
-				// Enable mouse cursor so the player can click buttons
+				PC->SetGameFlowState(EGameFlowState::MatchOver);
 				PC->bShowMouseCursor = true;
 				FInputModeUIOnly InputMode;
 				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);

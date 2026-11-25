@@ -6,6 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Sound/SoundMix.h"
 #include "Sound/SoundClass.h"
+#include "MyPlayerController.h"
 
 void UMainMenuWidget::NativeConstruct()
 {
@@ -20,17 +21,17 @@ void UMainMenuWidget::NativeConstruct()
 	if (Slider_SFX) Slider_SFX->OnValueChanged.AddDynamic(this, &UMainMenuWidget::OnSFXVolumeChanged);
 
 	// Show mouse cursor and set UI mode
-	if (APlayerController* PC = GetOwningPlayer())
+	
+	if (AMyPlayerController* PC = Cast<AMyPlayerController>(GetOwningPlayer()))
 	{
-		PC->bShowMouseCursor = true;
-		PC->SetInputMode(FInputModeUIOnly());
+		PC->SetGameFlowState(EGameFlowState::TitleScreen);
 	}
 }
 
 void UMainMenuWidget::OnPlayClicked()
 {
 	// Load the gameplay map
-	UGameplayStatics::OpenLevel(this, FName("TestMap")); // Replace with your gameplay map name
+	UGameplayStatics::OpenLevel(this, FName("TestMap")); 
 }
 
 void UMainMenuWidget::OnSettingsClicked()
@@ -52,7 +53,7 @@ void UMainMenuWidget::OnMusicVolumeChanged(float Value)
 {
 	if (MasterSoundMix && MusicSoundClass)
 	{
-		// Value comes in as 0.0 to 1.0
+		// Value comes in as 1.0 to 0.0
 		UGameplayStatics::SetSoundMixClassOverride(this, MasterSoundMix, MusicSoundClass, Value, 1.0f, 0.0f);
 		UGameplayStatics::PushSoundMixModifier(this, MasterSoundMix);
 	}

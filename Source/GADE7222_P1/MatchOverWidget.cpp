@@ -46,5 +46,5 @@ void UMatchOverWidget::OnQuitClicked()
 {
 	// Unpause the game, then go back to the Main Menu
 	UGameplayStatics::SetGamePaused(GetWorld(), false);
-	UGameplayStatics::OpenLevel(this, FName("MainMenuMap")); // Replace with your Main Menu level name
+	UGameplayStatics::OpenLevel(this, FName("MainMenuMap")); 
 }

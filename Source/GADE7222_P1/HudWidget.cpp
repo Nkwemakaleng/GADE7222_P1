@@ -21,19 +21,18 @@ void UHUDWidget::NativeConstruct()
 
 	if (Text_InteractPrompt) Text_InteractPrompt->SetVisibility(ESlateVisibility::Hidden);
 	
-	// Bind to the GameState event
-	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
-	{
-		GS->OnKillFeedEvent.AddUniqueDynamic(this, &UHUDWidget::AddKillFeedEntry);
-	}
+	
 }
 
 void UHUDWidget::NativeDestruct()
 {
-	// Unbind to prevent crashes
-	if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+	// Unbind if we managed to bind
+	if (bIsKillFeedBound)
 	{
-		GS->OnKillFeedEvent.RemoveDynamic(this, &UHUDWidget::AddKillFeedEntry);
+		if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+		{
+			GS->OnKillFeedEvent.RemoveDynamic(this, &UHUDWidget::AddKillFeedEntry);
+		}
 	}
 	UnbindFromCharacter();
 	Super::NativeDestruct();
@@ -119,7 +118,15 @@ void UHUDWidget::HandleStaminaChanged(float Current, float Max)
 void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
-
+	if (!bIsKillFeedBound)
+	{
+		if (AMyGameState* GS = GetWorld()->GetGameState<AMyGameState>())
+		{
+			GS->OnKillFeedEvent.AddUniqueDynamic(this, &UHUDWidget::AddKillFeedEntry);
+			bIsKillFeedBound = true;
+			UE_LOG(LogTemp, Warning, TEXT("HUDWidget: Kill Feed Successfully Bound!"));
+		}
+	}
 	ABaseCharacter* Char = CachedCharacter.Get();
 	if (!Char || !Text_InteractPrompt) return;
 
