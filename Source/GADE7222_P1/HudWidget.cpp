@@ -175,7 +175,7 @@ void UHUDWidget::AddKillFeedEntry(const FString& KillerName, const FString& Vict
 		FSlateFontInfo FontInfo(KillFeedFont, KillFeedFontSize);
 		NewEntry->SetFont(FontInfo);
 	}
-	NewEntry->SetColorAndOpacity(FSlateColor(FLinearColor::Black));
+	NewEntry->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 	NewEntry->SetShadowOffset(FVector2D(1.f, 1.f));
 	NewEntry->SetShadowColorAndOpacity(FLinearColor::Black);
 	NewEntry->SetJustification(ETextJustify::Right);
